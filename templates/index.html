@@ -35,6 +35,16 @@
                 <button type="button" class="close-btn" onclick="closeForm('loginForm')">Close</button>
             </form>
         </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
     
         <div id="signupForm" class="form-popup">
             <h2>Signup</h2>

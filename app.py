@@ -50,6 +50,8 @@ def home():
                     return redirect(url_for('home'))
                else:
                     flash("Invalid username or password!", "error")
+          else:
+               flash("User does not exist. Please signup.", "error")
           
 
             

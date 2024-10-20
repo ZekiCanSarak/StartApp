@@ -12,9 +12,12 @@
             <h1>StartApp</h1>
             <nav>
                 <ul>
-                    <li><a href="#">Home</a></li>
-                    <li><a href="#">Hackathons</a></li>
-                    <li><a href="#">Profile</a></li>
+                    {%if not logged_in %}
+                        <li><button onclick="showForm('loginForm')">Login</button></li>
+                        <li><button onclick="showForm('signupForm')">Signup</button></li>
+                    {% else %}
+                        <li><a href="/logout">Logout</a></li>
+                    {% endif %}
                 </ul>
             </nav>
         </div>
@@ -22,20 +25,50 @@
 
     <div class="container">
 
-        <aside class="sidebar">
-            <ul>
-                <li><a href="#">Home</a></li>
-                    <li><a href="#">Hackathons</a></li>
-                    <li><a href="#">Profile</a></li>
-            </ul>
-        </aside>
+        {%if not logged_in %}
+        <div id="loginForm" class="form-popup">
+            <h2>Login</h2>
+            <form action="/" method="POST">
+                <input type="text" name="login_username" placeholder="Username" required><br>
+                <input type="password" name="login_password" placeholder="Password" required><br>
+                <button type="submit" name="login">Login</button>
+                <button type="button" class="close-btn" onclick="closeForm('loginForm')">Close</button>
+            </form>
+        </div>
+    
+        <div id="signupForm" class="form-popup">
+            <h2>Signup</h2>
+            <form action="/" method="POST">
+                <input type="text" name="username" placeholder="Username" required><br>
+                <input type="email" name="email" placeholder="Email" required><br>
+                <input type="password" name="password" placeholder="Password" required><br>
+                <button type="submit" name="signup">Signup</button>
+                <button type="button" class="close-btn" onclick="closeForm('signupForm')">Close</button>
+            </form>
+        </div>
+        {% else %}
+    
+            <aside class="sidebar">
+                <ul>
+                    <li><a href="#">Home</a></li>
+                        <li><a href="#">Hackathons</a></li>
+                        <li><a href="#">Profile</a></li>
+                </ul>
+            </aside>
 
-        <main class="main-content">
-            <h2>Feed</h2>
-            <div class="feed">
+            <main class="main-content">
+                <h2>Welcome, {{ session['username'] }}!</h2>
+                <h2>Feed</h2>
+                <div class="feed">
 
-            </div>
-        </main>
+                </div>
+            </main>
+        {% endif %}
     </div>
+
+    <script src="{{ url_for('static', filename='js/index.js')}}"></script>
+
+   
+
 </body>
 </html>

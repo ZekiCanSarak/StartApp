@@ -23,13 +23,6 @@
         </div>
     </header>
 
-    <aside class="sidebar">
-        <ul>
-            <li><a href="/hack">Hackathons</a></li>
-                <li><a href="#">Profile</a></li>
-        </ul>
-    </aside>
-
     <div class="container">
 
         {%if not logged_in %}
@@ -64,16 +57,52 @@
             </form>
         </div>
         {% else %}
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/hack">Hackathons</a></li>
+                    <li><a href="#">Profile</a></li>
+            </ul>
+        </aside>
+
     
 
         <main class="main-content">
+            <button class="create-post-btn" onclick="showForm('postFormPopup')">Create Job Post</button>
             <h2>Welcome, {{ session['username'] }}!</h2>
             <h2>Feed</h2>
-            <div class="feed">
+            <div class="feed" id="feed">
+                {% if job_posts %}
+                    {% for post in job_posts %}
+                        <div class="job-post">
+                            <h3>{{ post[0] }}</h3>
+                            <p>{{ post[1] }}</p>
+                            <p><strong>Posted by:</strong> {{ post[3] }} on {{ post[4] }}</p>
+                            <a href="{{ post[2 ]}}" target="_blank">Apply Here</a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                        <p>No job posts available Be the first to post one!</p>
+                {% endif %}
 
             </div>
         </main>
+
+        <div id="postFormPopup" class="form-popup">
+            <h2>Create Job Posts</h2>
+            <form id="postForm" action="/create_post" method="POST">
+                <input type="text" name="title" placeholder="Job Title" required><br>
+                <textarea name="description" placeholder="Description" required></textarea><br>
+                <input type="url" name="url" placeholder="Application Link (URL)" required><br>
+                <button type="submit">Post</button>
+                <button type="button" class="close-btn" onclick="closeForm('postFormPopup')">Close</button>
+            </form>
+        </div>
+
+
     {% endif %}
+
+
+
     </div>
 
 

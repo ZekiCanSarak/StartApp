@@ -52,6 +52,10 @@ def home():
                     flash("Invalid username or password!", "error")
           else:
                flash("User does not exist. Please signup.", "error")
+
+     if 'username' in session:
+          job_posts = query_db("SELECT title, description, url, username, date FROM job_posts ORDER BY id DESC")
+          return render_template('index.html', logged_in=True, job_posts=job_posts)
           
      return render_template('index.html', logged_in=session.get('logged_in', False))
 
@@ -83,6 +87,39 @@ def post_hackathon():
           })
      except Exception as e:
           return jsonify({'success': False, 'message': str(e)})
+     
+
+@app.route('/create_post', methods=['POST'])
+def create_post():
+     if 'username' not in session:
+          return jsonify({'success': False, 'message': 'You need to be logged in to create a post'})
+     
+     title = request.form.get('title')
+     description = request.form.get('description')
+     url = request.form.get('url')
+     username = session['username']
+     date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+     try:
+          insert_db("INSERT INTO job_posts (title, description, url, username, date) VALUES (?, ?, ?, ?, ?)",
+                    (title, description, url, username, date))
+          
+          return jsonify({
+               'success': True,
+               'post': {
+                    'title': title,
+                    'description': description,
+                    'url': url,
+                    'username': username,
+                    'date': date
+               }
+          })
+     except Exception as e:
+          return jsonify({'success': False, 'message': str(e)})
+
+
+
+
 
 @app.route('/logout')
 def logout():

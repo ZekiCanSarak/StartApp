@@ -3,11 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage</title>
+    <title>Hackathons</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
+    <header> 
+        <div class="navbar">
+            <h1>Hackathons</h1>
+            <button class="post-hack-btn" onclick="showForm()">Post New Hackathons</button>
+        </div>
+    </header>
 
+    <main class="container">
+        <div id="hackathon-feed">
+            {% for hackathon in hackathons %}
+            <div class="hackathon-post">
+                <h3>{{ hackathon.title }}</h3>
+                <p>{{ hackathon.description }}</p>
+                <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                <p><strong>Location:</strong> {{ hackathon.location }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <div id="hackathon-form-popup" class="form-popup">
+        <form id="hackathon-form" action="/post_hackathon" method="POST">
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" required><br>
+
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" required></textarea><br>
+
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required><br>
+
+            <label for="location">Location:</label>
+            <input type="text" id="location" name="location" required><br>
+
+            <button type="submit">Post</button>
+            <button type="button" onclick="closeForm()">Cancel</button>
+        </form>
+    </div>
+    <script src="{{ url_for('static', filename='js/hack.js') }}"></script>
 
 </body>
 </html>

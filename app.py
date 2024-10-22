@@ -53,10 +53,36 @@ def home():
           else:
                flash("User does not exist. Please signup.", "error")
           
-
-            
-               
      return render_template('index.html', logged_in=session.get('logged_in', False))
+
+
+@app.route('/hack', methods=['GET'])
+def hack():
+     hackathons = query_db("SELECT title, description, date, location FROM hackathons")
+     return render_template('hack.html', hackathons=hackathons)
+
+@app.route('/post_hackathon', methods=['POSt'])
+def post_hackathon():
+     title = request.form['title']
+     description = request.form['description']
+     date = request.form['date']
+     location = request.form['location']
+
+     try:
+          insert_db("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
+                    (title, description, date, location))
+          
+          return jsonify({
+               'success':True,
+               'hackathon': {
+                    'title': title,
+                    'description': description,
+                    'date': date,
+                    'location': location
+               }
+          })
+     except Exception as e:
+          return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/logout')
 def logout():

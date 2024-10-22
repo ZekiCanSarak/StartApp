@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hackathons</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hack.css') }}">
 </head>
 <body>
     <header> 
@@ -14,16 +14,27 @@
         </div>
     </header>
 
+    <aside class="sidebar">
+        <ul>
+            <li><a href="/">Home</a></li>
+                <li><a href="#">Profile</a></li>
+        </ul>
+    </aside>
+
     <main class="container">
         <div id="hackathon-feed">
-            {% for hackathon in hackathons %}
-            <div class="hackathon-post">
-                <h3>{{ hackathon.title }}</h3>
-                <p>{{ hackathon.description }}</p>
-                <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                <p><strong>Location:</strong> {{ hackathon.location }}</p>
-            </div>
+            {%if hackathons %}
+                {% for hackathon in hackathons %}
+                <div class="hackathon-post">
+                    <h3>{{ hackathon[0] }}</h3>
+                    <p>{{ hackathon[1] }}</p>
+                    <p><strong>Date:</strong> {{ hackathon[2] }}</p>
+                    <p><strong>Location:</strong> {{ hackathon[3] }}</p>
+                </div>
             {% endfor %}
+            {% else %}
+            <p>No hackathons available. Be the first to post one!</p>
+            {% endif %}
         </div>
     </main>
 

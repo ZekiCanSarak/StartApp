@@ -23,6 +23,13 @@
         </div>
     </header>
 
+    <aside class="sidebar">
+        <ul>
+            <li><a href="/hack">Hackathons</a></li>
+                <li><a href="#">Profile</a></li>
+        </ul>
+    </aside>
+
     <div class="container">
 
         {%if not logged_in %}
@@ -58,23 +65,17 @@
         </div>
         {% else %}
     
-            <aside class="sidebar">
-                <ul>
-                    <li><a href="#">Home</a></li>
-                        <li><a href="/hack">Hackathons</a></li>
-                        <li><a href="#">Profile</a></li>
-                </ul>
-            </aside>
 
-            <main class="main-content">
-                <h2>Welcome, {{ session['username'] }}!</h2>
-                <h2>Feed</h2>
-                <div class="feed">
+        <main class="main-content">
+            <h2>Welcome, {{ session['username'] }}!</h2>
+            <h2>Feed</h2>
+            <div class="feed">
 
-                </div>
-            </main>
-        {% endif %}
+            </div>
+        </main>
+    {% endif %}
     </div>
+
 
     <script src="{{ url_for('static', filename='js/index.js')}}"></script>
 

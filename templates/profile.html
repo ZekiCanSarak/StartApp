@@ -4,9 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homepage</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
 <body>
+    <header>
+        <div class="navbar">
+            <h1>Profile</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/hack">Hackathons</a></li>
+            </ul>
+        </aside>
+
+        <main class="profile-content">
+            <h2>Your Profile</h2>
+            <form id="profileForm" method="POST">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" value="{{ user_details[0] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="age">Age:</label>
+                    <input type="number" id="age" name="age" value="{{ user_details[1] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="school">School or Workplace:</label>
+                    <input type="text" id="school" name="school" value="{{ user_details[2] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="skills">Coding Languages (Skills):</label>
+                    <input type="text" id="skills" name="skills" value="{{ user_details[3] }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="hackathon">Attended a Hackathon Before?</label>
+                    <select id="hackathon" name="hackathon" disabled>
+                        <option value="Yes" selected>Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <button type="button" id="editButton" onclick="enableEdit()">Edit</button>
+                <button type="submit" id="saveButton" onclick="saveChanges()" style="display: none;">Save</button>
+                <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">Cancel</button>
+            </form>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+
 
 
 </body>

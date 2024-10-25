@@ -116,8 +116,38 @@ def create_post():
           })
      except Exception as e:
           return jsonify({'success': False, 'message': str(e)})
+     
 
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    if 'username' not in session:
+        flash("Please log in to access your profile", "error")
+        return redirect(url_for('home'))
 
+    if request.method == 'POST':
+        # Get updated profile data from the form
+        name = request.form.get('name')
+        age = request.form.get('age')
+        school = request.form.get('school')
+        skills = request.form.get('skills')
+        hackathon = request.form.get('hackathon')
+
+        # Update or insert the user's profile in the database
+        try:
+            existing_profile = query_db("SELECT * FROM user_profiles WHERE username = ?", [session['username']], one=True)
+            if existing_profile:
+                insert_db("UPDATE user_profiles SET name = ?, age = ?, school = ?, skills = ?, hackathon = ? WHERE username = ?",
+                          (name, age, school, skills, hackathon, session['username']))
+            else:
+                insert_db("INSERT INTO user_profiles (username, name, age, school, skills, hackathon) VALUES (?, ?, ?, ?, ?, ?)",
+                          (session['username'], name, age, school, skills, hackathon))
+            flash("Profile updated successfully!", "success")
+        except Exception as e:
+            flash("Error updating profile: " + str(e), "error")
+
+    # Fetch user profile details to display on the page
+    user_details = query_db("SELECT name, age, school, skills, hackathon FROM user_profiles WHERE username = ?", [session['username']], one=True)
+    return render_template('profile.html', user_details=user_details)
 
 
 

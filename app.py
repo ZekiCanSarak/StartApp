@@ -10,6 +10,7 @@ app.secret_key = '123456789'
 
 def get_db():
      db = sqlite3.connect('database.sqlite')
+     db.row_factory = sqlite3.Row
      return db
 
 def query_db(query, args=(), one=False):
@@ -62,31 +63,39 @@ def home():
 
 @app.route('/hack', methods=['GET'])
 def hack():
-     hackathons = query_db("SELECT title, description, date, location FROM hackathons")
+     hackathons = query_db("SELECT id, title, description, date, location FROM hackathons ORDER BY id DESC")  # Order by ID in descending order
      return render_template('hack.html', hackathons=hackathons)
 
-@app.route('/post_hackathon', methods=['POSt'])
+@app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
-     title = request.form['title']
-     description = request.form['description']
-     date = request.form['date']
-     location = request.form['location']
+    title = request.form['title']
+    description = request.form['description']
+    date = request.form['date']
+    location = request.form['location']
 
-     try:
-          insert_db("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
-                    (title, description, date, location))
-          
-          return jsonify({
-               'success':True,
-               'hackathon': {
-                    'title': title,
-                    'description': description,
-                    'date': date,
-                    'location': location
-               }
-          })
-     except Exception as e:
-          return jsonify({'success': False, 'message': str(e)})
+    try:
+        # Insert the new hackathon into the database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
+                       (title, description, date, location))
+        db.commit()
+        
+        # Retrieve the ID of the newly inserted hackathon
+        hackathon_id = cursor.lastrowid  # Get the auto-generated ID
+        
+        return jsonify({
+            'success': True,
+            'hackathon': {
+                'id': hackathon_id,
+                'title': title,
+                'description': description,
+                'date': date,
+                'location': location
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
      
 
 @app.route('/create_post', methods=['POST'])
@@ -148,6 +157,31 @@ def profile():
     # Fetch user profile details to display on the page
     user_details = query_db("SELECT name, age, school, skills, hackathon FROM user_profiles WHERE username = ?", [session['username']], one=True)
     return render_template('profile.html', user_details=user_details)
+
+
+@app.route('/join_hackathon', methods=['POST'])
+def join_hackathon():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Please log in to join a hackathon."})
+
+    data = request.get_json()
+    id = data.get('id')  # Get 'id' instead of 'hackathon_id'
+    username = session['username']
+
+    # Check if the user has already joined this specific hackathon
+    existing_entry = query_db("SELECT * FROM participants WHERE hackathon_id = ? AND username = ?", 
+                              (id, username), one=True)
+
+    if existing_entry:
+        return jsonify({"success": False, "message": "You have already joined this hackathon."})
+
+    try:
+        # Insert into participants table
+        insert_db("INSERT INTO participants (hackathon_id, username) VALUES (?, ?)", (id, username))
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+
 
 
 

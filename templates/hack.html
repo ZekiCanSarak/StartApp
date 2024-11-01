@@ -23,19 +23,39 @@
 
     <main class="container">
         <div id="hackathon-feed">
-            {%if hackathons %}
-                {% for hackathon in hackathons %}
+            {% if active_hackathons %}
+                <h2>Upcoming Hackathons</h2>
+                {% for hackathon in active_hackathons %}
                 <div class="hackathon-post">
                     <h3>{{ hackathon.title }}</h3>
                     <p>{{ hackathon.description }}</p>
                     <p><strong>Date:</strong> {{ hackathon.date }}</p>
                     <p><strong>Location:</strong> {{ hackathon.location }}</p>
                     <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
-                    <button class="join-hackathon-btn" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
+    
+                    {% if hackathon.joined == 1 %}
+                        <button class="join-hackathon-btn joined" disabled>Joined</button>
+                    {% else %}
+                        <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
+                    {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
-            <p>No hackathons available. Be the first to post one!</p>
+                <p>No upcoming hackathons available.</p>
+            {% endif %}
+    
+            {% if expired_hackathons %}
+                <h2>Expired Hackathons</h2>
+                {% for hackathon in expired_hackathons %}
+                <div class="hackathon-post expired">
+                    <h3>{{ hackathon.title }}</h3>
+                    <p>{{ hackathon.description }}</p>
+                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                    <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
+                    <p class="expired-note">This hackathon has expired.</p>
+                </div>
+                {% endfor %}
             {% endif %}
         </div>
     </main>

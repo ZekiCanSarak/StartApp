@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, flash
 from passlib.hash import sha256_crypt
 import sqlite3
-import datetime
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -63,8 +63,34 @@ def home():
 
 @app.route('/hack', methods=['GET'])
 def hack():
-     hackathons = query_db("SELECT id, title, description, date, location FROM hackathons ORDER BY id DESC")  # Order by ID in descending order
-     return render_template('hack.html', hackathons=hackathons)
+    if 'username' not in session:
+        flash("Please log in to view hackathons.", "error")
+        return redirect(url_for('home'))
+    
+    username = session['username']
+    today = datetime.now().date()
+
+    # Query for active hackathons (today or in the future)
+    active_hackathons = query_db("""
+        SELECT h.id, h.title, h.description, h.date, h.location,
+               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+        FROM hackathons h
+        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+        WHERE h.date >= ?
+        ORDER BY h.id DESC
+    """, [username, today])
+
+    # Query for expired hackathons (before today)
+    expired_hackathons = query_db("""
+        SELECT h.id, h.title, h.description, h.date, h.location,
+               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+        FROM hackathons h
+        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+        WHERE h.date < ?
+        ORDER BY h.date ASC
+    """, [username, today])
+    
+    return render_template('hack.html', active_hackathons=active_hackathons, expired_hackathons=expired_hackathons)
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
@@ -181,9 +207,6 @@ def join_hackathon():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
-
-
-
 
 @app.route('/logout')
 def logout():

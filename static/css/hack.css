@@ -126,3 +126,18 @@ body{
     text-decoration: none;
     font-weight: bold;
 }
+
+.joined {
+    background-color: gray;  /* Visually indicate the joined state */
+    cursor: default;
+}
+
+.expired {
+    opacity: 0.6;
+    background-color: #f8f8f8;
+}
+
+.expired-note {
+    color: red;
+    font-style: italic;
+}

@@ -66,7 +66,13 @@ function joinHackathon(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert("You have successfully joined the hackathon!");
+            // Change the button to show "Joined" and disable it
+            const joinButton = document.querySelector(`.join-hackathon-btn[data-id="${id}"]`);
+            if (joinButton) {
+                joinButton.textContent = "Joined";
+                joinButton.disabled = true;
+                joinButton.classList.add("joined"); // Optional styling class
+            }
         } else {
             alert("Failed to join the hackathon: " + data.message);
         }

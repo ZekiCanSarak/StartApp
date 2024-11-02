@@ -128,7 +128,7 @@ body{
 }
 
 .joined {
-    background-color: gray;  /* Visually indicate the joined state */
+    background-color: gray;  
     cursor: default;
 }
 
@@ -140,4 +140,18 @@ body{
 .expired-note {
     color: red;
     font-style: italic;
+}
+
+.calendar-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin-left: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.calendar-btn:hover {
+    background-color: #45a049;
 }

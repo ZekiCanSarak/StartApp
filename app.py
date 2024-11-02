@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, flash
 from passlib.hash import sha256_crypt
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
+from urllib.parse import urlencode
+
 
 
 app = Flask(__name__)
@@ -66,31 +68,61 @@ def hack():
     if 'username' not in session:
         flash("Please log in to view hackathons.", "error")
         return redirect(url_for('home'))
-    
+
     username = session['username']
     today = datetime.now().date()
 
-    # Query for active hackathons (today or in the future)
-    active_hackathons = query_db("""
+    user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
+    user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
+
+    skill_conditions = " OR ".join([
+        "(title LIKE ? OR title LIKE ? OR title LIKE ? OR description LIKE ? OR description LIKE ? OR description LIKE ?)"
+        for _ in user_skills
+    ])
+    
+    skill_params = []
+    for skill in user_skills:
+        trimmed_skill = skill.strip()
+        skill_params.extend([
+            f"% {trimmed_skill} %",        
+            f"{trimmed_skill} %",           
+            f"% {trimmed_skill}",           
+            f"% {trimmed_skill} %",         
+            f"{trimmed_skill} %",           
+            f"% {trimmed_skill}"            
+        ])
+
+    
+    matching_hackathons = query_db(f"""
         SELECT h.id, h.title, h.description, h.date, h.location,
                CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
         FROM hackathons h
         LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-        WHERE h.date >= ?
-        ORDER BY h.id DESC
-    """, [username, today])
+        WHERE h.date >= ? AND ({skill_conditions})
+        ORDER BY h.date ASC
+    """, [username, today] + skill_params)
 
-    # Query for expired hackathons (before today)
+    
+    other_hackathons = query_db(f"""
+        SELECT h.id, h.title, h.description, h.date, h.location,
+               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+        FROM hackathons h
+        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+        WHERE h.date >= ? AND NOT ({skill_conditions})
+        ORDER BY h.date ASC
+    """, [username, today] + skill_params)
+
+    
     expired_hackathons = query_db("""
         SELECT h.id, h.title, h.description, h.date, h.location,
                CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
         FROM hackathons h
         LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
         WHERE h.date < ?
-        ORDER BY h.date ASC
+        ORDER BY h.date DESC
     """, [username, today])
-    
-    return render_template('hack.html', active_hackathons=active_hackathons, expired_hackathons=expired_hackathons)
+
+    return render_template('hack.html', matching_hackathons=matching_hackathons, other_hackathons=other_hackathons, expired_hackathons=expired_hackathons)
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
@@ -100,15 +132,15 @@ def post_hackathon():
     location = request.form['location']
 
     try:
-        # Insert the new hackathon into the database
+        
         db = get_db()
         cursor = db.cursor()
         cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
                        (title, description, date, location))
         db.commit()
         
-        # Retrieve the ID of the newly inserted hackathon
-        hackathon_id = cursor.lastrowid  # Get the auto-generated ID
+        
+        hackathon_id = cursor.lastrowid  
         
         return jsonify({
             'success': True,
@@ -160,14 +192,13 @@ def profile():
         return redirect(url_for('home'))
 
     if request.method == 'POST':
-        # Get updated profile data from the form
+        
         name = request.form.get('name')
         age = request.form.get('age')
         school = request.form.get('school')
         skills = request.form.get('skills')
         hackathon = request.form.get('hackathon')
 
-        # Update or insert the user's profile in the database
         try:
             existing_profile = query_db("SELECT * FROM user_profiles WHERE username = ?", [session['username']], one=True)
             if existing_profile:
@@ -180,7 +211,7 @@ def profile():
         except Exception as e:
             flash("Error updating profile: " + str(e), "error")
 
-    # Fetch user profile details to display on the page
+    
     user_details = query_db("SELECT name, age, school, skills, hackathon FROM user_profiles WHERE username = ?", [session['username']], one=True)
     return render_template('profile.html', user_details=user_details)
 
@@ -191,10 +222,10 @@ def join_hackathon():
         return jsonify({"success": False, "message": "Please log in to join a hackathon."})
 
     data = request.get_json()
-    id = data.get('id')  # Get 'id' instead of 'hackathon_id'
+    id = data.get('id')  
     username = session['username']
 
-    # Check if the user has already joined this specific hackathon
+    
     existing_entry = query_db("SELECT * FROM participants WHERE hackathon_id = ? AND username = ?", 
                               (id, username), one=True)
 
@@ -202,11 +233,38 @@ def join_hackathon():
         return jsonify({"success": False, "message": "You have already joined this hackathon."})
 
     try:
-        # Insert into participants table
         insert_db("INSERT INTO participants (hackathon_id, username) VALUES (?, ?)", (id, username))
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+    
+
+@app.route('/add_to_google_calendar/<int:hackathon_id>')
+def add_to_google_calendar(hackathon_id):
+    hackathon = query_db("SELECT title, description, date, location FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+
+    if hackathon:
+        event_start = datetime.strptime(hackathon['date'], '%Y-%m-%d')
+        event_end = event_start + timedelta(hours=2)
+
+        start_time = event_start.strftime('%Y%m%dT%H%M%SZ')
+        end_time = event_end.strftime('%Y%m%dT%H%M%SZ')
+
+        google_calendar_url = (
+            "https://www.google.com/calendar/render?action=TEMPLATE&" +
+            urlencode({
+                "text": hackathon['title'],
+                "dates": f"{start_time}/{end_time}",
+                "details": hackathon['description'],
+                "location": hackathon['location'],
+                "sf": "true",
+                "output": "xml"
+            })
+        )
+
+        return redirect(google_calendar_url)
+    else:
+        return "Hackathon not found", 404
 
 @app.route('/logout')
 def logout():

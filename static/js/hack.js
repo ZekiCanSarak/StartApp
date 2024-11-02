@@ -54,24 +54,24 @@ function addHackathonToFeed(hackathon) {
 }
 
 function joinHackathon(id) {
-    console.log("Attempting to join hackathon with ID:", id); // Debugging
+    console.log("Attempting to join hackathon with ID:", id); 
 
     fetch("/join_hackathon", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ id: id })  // Send 'id' directly
+        body: JSON.stringify({ id: id })  
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Change the button to show "Joined" and disable it
+            
             const joinButton = document.querySelector(`.join-hackathon-btn[data-id="${id}"]`);
             if (joinButton) {
                 joinButton.textContent = "Joined";
                 joinButton.disabled = true;
-                joinButton.classList.add("joined"); // Optional styling class
+                joinButton.classList.add("joined"); 
             }
         } else {
             alert("Failed to join the hackathon: " + data.message);

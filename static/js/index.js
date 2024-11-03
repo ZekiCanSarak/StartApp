@@ -1,5 +1,15 @@
-function showForm(formId) {
-    document.getElementById(formId).style.display = 'block';
+function toggleForm(formId) {
+    const form = document.getElementById(formId);
+    const otherFormId = formId === 'loginForm' ? 'signupForm' : 'loginForm';
+    const otherForm = document.getElementById(otherFormId);
+
+
+    if (form.style.display === 'block') {
+        form.style.display = 'none';
+    } else {
+        form.style.display = 'block';
+        otherForm.style.display = 'none';
+    }
 }
 
 function closeForm(formId) {

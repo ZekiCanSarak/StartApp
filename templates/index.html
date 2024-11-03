@@ -13,8 +13,8 @@
             <nav>
                 <ul>
                     {%if not logged_in %}
-                        <li><button onclick="showForm('loginForm')">Login</button></li>
-                        <li><button onclick="showForm('signupForm')">Signup</button></li>
+                        <li><button onclick="toggleForm('loginForm')">Login</button></li>
+                        <li><button onclick="toggleForm('signupForm')">Signup</button></li>
                     {% else %}
                         <li><a href="/logout">Logout</a></li>
                     {% endif %}

@@ -190,9 +190,9 @@ button:hover {
     padding: 10px;
 }
 
-.feed{
+.job-feed{
     background-color: white;
-    padding: 5rem;
+    padding: 1rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
 }

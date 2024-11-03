@@ -70,20 +70,26 @@
             <button class="create-post-btn" onclick="showForm('postFormPopup')">Create Job Post</button>
             <h2>Welcome, {{ session['username'] }}!</h2>
             <h2>Feed</h2>
-            <div class="feed" id="feed">
-                {% if job_posts %}
-                    {% for post in job_posts %}
+            <div class="job-feed">
+                {% if personalized_jobs %}
+                    <h2>Personalised Job Matches</h2>
+                    {% for job in personalized_jobs %}
                         <div class="job-post">
-                            <h3>{{ post[0] }}</h3>
-                            <p>{{ post[1] }}</p>
-                            <p><strong>Posted by:</strong> {{ post[3] }} on {{ post[4] }}</p>
-                            <a href="{{ post[2 ]}}" target="_blank">Apply Here</a>
+                            <h3>{{ job.title }}</h3>
+                            <p>{{ job.description }}</p>
+                            <a href="{{ job.url }}" target="_blank">Apply Here</a>
                         </div>
                     {% endfor %}
-                {% else %}
-                        <p>No job posts available Be the first to post one!</p>
                 {% endif %}
-
+            
+                <h2>All Job Posts</h2>
+                {% for job in general_jobs %}
+                    <div class="job-post">
+                        <h3>{{ job.title }}</h3>
+                        <p>{{ job.description }}</p>
+                        <a href="{{ job.url }}" target="_blank">Apply Here</a>
+                    </div>
+                {% endfor %}
             </div>
         </main>
 

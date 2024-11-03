@@ -57,10 +57,30 @@ def home():
                flash("User does not exist. Please signup.", "error")
 
      if 'username' in session:
-          job_posts = query_db("SELECT title, description, url, username, date FROM job_posts ORDER BY id DESC")
-          return render_template('index.html', logged_in=True, job_posts=job_posts)
-          
-     return render_template('index.html', logged_in=session.get('logged_in', False))
+        username = session['username']
+        
+        user_profile = query_db("SELECT preferred_jobs FROM user_profiles WHERE username = ?", [username], one=True)
+        preferred_jobs = user_profile[0].split(',') if user_profile and user_profile[0] else []
+
+        job_conditions = " OR ".join(["title LIKE ? OR description LIKE ?" for _ in preferred_jobs])
+        job_params = [f"%{job.strip()}%" for job in preferred_jobs for _ in range(2)]
+
+        personalized_jobs = query_db(f"""
+            SELECT * FROM job_posts
+            WHERE {job_conditions}
+            ORDER BY id DESC
+        """, job_params) if job_params else []
+
+        general_jobs = query_db(f"""
+            SELECT * FROM job_posts
+            WHERE NOT ({job_conditions})
+            ORDER BY id DESC
+        """, job_params) if job_params else query_db("SELECT * FROM job_posts ORDER BY id DESC")
+
+        return render_template('index.html', logged_in=True, personalized_jobs=personalized_jobs, general_jobs=general_jobs)
+
+     all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
+     return render_template('index.html', logged_in=False, general_jobs=all_jobs)
 
 
 @app.route('/hack', methods=['GET'])
@@ -198,21 +218,22 @@ def profile():
         school = request.form.get('school')
         skills = request.form.get('skills')
         hackathon = request.form.get('hackathon')
-
+        preferred_jobs = request.form.get('preferred_jobs')
         try:
             existing_profile = query_db("SELECT * FROM user_profiles WHERE username = ?", [session['username']], one=True)
             if existing_profile:
-                insert_db("UPDATE user_profiles SET name = ?, age = ?, school = ?, skills = ?, hackathon = ? WHERE username = ?",
-                          (name, age, school, skills, hackathon, session['username']))
+                insert_db("UPDATE user_profiles SET name = ?, age = ?, school = ?, skills = ?, hackathon = ?, preferred_jobs = ? WHERE username = ?",
+                          (name, age, school, skills, hackathon, preferred_jobs, session['username']))
             else:
-                insert_db("INSERT INTO user_profiles (username, name, age, school, skills, hackathon) VALUES (?, ?, ?, ?, ?, ?)",
-                          (session['username'], name, age, school, skills, hackathon))
+                insert_db("INSERT INTO user_profiles (username, name, age, school, skills, hackathon, preferred_jobs) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                          (session['username'], name, age, school, skills, hackathon, preferred_jobs))
             flash("Profile updated successfully!", "success")
         except Exception as e:
             flash("Error updating profile: " + str(e), "error")
+        return redirect(url_for('profile'))  
 
     
-    user_details = query_db("SELECT name, age, school, skills, hackathon FROM user_profiles WHERE username = ?", [session['username']], one=True)
+    user_details = query_db("SELECT name, age, school, skills, hackathon, preferred_jobs FROM user_profiles WHERE username = ?", [session['username']], one=True)
     return render_template('profile.html', user_details=user_details)
 
 

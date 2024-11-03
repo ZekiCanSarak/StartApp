@@ -35,7 +35,7 @@
     
                     {% if hackathon.joined == 1 %}
                         <button class="join-hackathon-btn joined" disabled>Joined</button>
-                        <button onclick="location.href='/download_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
+                        <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
                     {% else %}
                         <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
                     {% endif %}
@@ -54,7 +54,7 @@
     
                 {% if hackathon.joined == 1 %}
                     <button class="join-hackathon-btn joined" disabled>Joined</button>
-                    <button onclick="location.href='/download_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
+                    <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
                 {% else %}
                     <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
                 {% endif %}

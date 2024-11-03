@@ -43,9 +43,13 @@
                 <div class="form-group">
                     <label for="hackathon">Attended a Hackathon Before?</label>
                     <select id="hackathon" name="hackathon" disabled>
-                        <option value="Yes" selected>Yes</option>
-                        <option value="No">No</option>
+                        <option value="Yes" {% if user_details[4] == 'Yes' %}selected{% endif %}>Yes</option>
+                        <option value="No" {% if user_details[4] == 'No' %}selected{% endif %}>No</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="preferred_jobs">Preferred Job Types:</label>
+                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details[5] }}" disabled>
                 </div>
                 <button type="button" id="editButton" onclick="enableEdit()">Edit</button>
                 <button type="submit" id="saveButton" onclick="saveChanges()" style="display: none;">Save</button>

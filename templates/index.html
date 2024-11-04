@@ -69,27 +69,30 @@
         <main class="main-content">
             <button class="create-post-btn" onclick="showForm('postFormPopup')">Create Job Post</button>
             <h2>Welcome, {{ session['username'] }}!</h2>
-            <h2>Feed</h2>
             <div class="job-feed">
-                {% if personalized_jobs %}
+                {% if personalised_jobs %}
                     <h2>Personalised Job Matches</h2>
-                    {% for job in personalized_jobs %}
+                    <div id="personalised-jobs">
+                        {% for job in personalised_jobs %}
+                            <div class="job-post">
+                                <h3>{{ job.title }}</h3>
+                                <p>{{ job.description }}</p>
+                                <a href="{{ job.url }}" target="_blank">Apply Here</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <h2>All Job Posts</h2>
+                <div id="general-jobs">
+                    {% for job in general_jobs %}
                         <div class="job-post">
                             <h3>{{ job.title }}</h3>
                             <p>{{ job.description }}</p>
                             <a href="{{ job.url }}" target="_blank">Apply Here</a>
                         </div>
                     {% endfor %}
-                {% endif %}
-            
-                <h2>All Job Posts</h2>
-                {% for job in general_jobs %}
-                    <div class="job-post">
-                        <h3>{{ job.title }}</h3>
-                        <p>{{ job.description }}</p>
-                        <a href="{{ job.url }}" target="_blank">Apply Here</a>
-                    </div>
-                {% endfor %}
+                </div>
             </div>
         </main>
 

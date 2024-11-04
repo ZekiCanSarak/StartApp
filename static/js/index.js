@@ -14,33 +14,68 @@ function toggleForm(formId) {
 
 function closeForm(formId) {
     document.getElementById(formId).style.display = 'none';
+    document.getElementById(formId).reset();
 }
 
-document.getElementById("postForm").addEventListener("submit", function (e){
+function showForm(formId) {
+    document.getElementById(formId).style.display = 'block';
+}
+
+function closeForm(formId) {
+    document.getElementById(formId).style.display = 'none';
+}
+
+function resetForm(formId) {
+    const form = document.getElementById(formId);
+    if (form && form.tagName === "FORM") {
+        form.reset();
+    }
+}
+
+document.getElementById("postForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const formData = new FormData(this);
-    fetch("/create_post", {
-        method: "POST",
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const post = data.post;
-            const postElement = document.createElement('div');
-            postElement.classList.add('job-post');
-            postElement.innerHTML = `
-                <h3>${post.title}</h3>
-                <p>${post.description}</p>
-                <p><strong>Posted by:</strong> ${post.username} on ${post.date}</p>
-                <a href="${post.url}" target="_blank">Apply Here</a>
-            `;
-            document.getElementById('feed').prepend(postElement);
-            closeForm('postFormPopup');
+
+    try {
+        const response = await fetch("/create_post", {
+            method: "POST",
+            body: formData
+        });
+
+        if (response.ok) {  
+            const data = await response.json();
+            
+            if (data.success) {
+                addJobToFeed(data.post); 
+                closeForm("postFormPopup");  
+                resetForm("postForm");      
+                return;
+            } else {
+                console.error("Backend error:", data.message);
+                alert(data.message || "An error occurred while posting the job.");
+            }
         } else {
-            alert(data.message);
-        } 
-    })
-    .catch(err => console.error('Error', err));
+            console.error("Non-200 status from server:", response.status);
+            alert("An error occurred while posting the job. Please try again.");
+        }
+    } catch (err) {
+        console.error('Fetch error:', err);
+        alert("An error occurred while posting the job. Please try again.");
+    }
 });
+
+function addJobToFeed(job) {
+    const jobElement = document.createElement('div');
+    jobElement.classList.add('job-post');
+
+    jobElement.innerHTML = `
+        <h3>${job.title}</h3>
+        <p>${job.description}</p>
+        <p><strong>Posted by:</strong> ${job.username} on ${job.date}</p>
+        <a href="${job.url}" target="_blank">Apply Here</a>
+    `;
+
+    const feed = document.getElementById(job.category === 'personalised' ? 'personalised-jobs' : 'general-jobs');
+    feed.prepend(jobElement);
+}

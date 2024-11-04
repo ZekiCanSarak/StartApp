@@ -65,7 +65,7 @@ def home():
         job_conditions = " OR ".join(["title LIKE ? OR description LIKE ?" for _ in preferred_jobs])
         job_params = [f"%{job.strip()}%" for job in preferred_jobs for _ in range(2)]
 
-        personalized_jobs = query_db(f"""
+        personalised_jobs = query_db(f"""
             SELECT * FROM job_posts
             WHERE {job_conditions}
             ORDER BY id DESC
@@ -77,7 +77,7 @@ def home():
             ORDER BY id DESC
         """, job_params) if job_params else query_db("SELECT * FROM job_posts ORDER BY id DESC")
 
-        return render_template('index.html', logged_in=True, personalized_jobs=personalized_jobs, general_jobs=general_jobs)
+        return render_template('index.html', logged_in=True, personalised_jobs=personalised_jobs, general_jobs=general_jobs)
 
      all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
      return render_template('index.html', logged_in=False, general_jobs=all_jobs)
@@ -181,31 +181,38 @@ def post_hackathon():
 
 @app.route('/create_post', methods=['POST'])
 def create_post():
-     if 'username' not in session:
-          return jsonify({'success': False, 'message': 'You need to be logged in to create a post'})
-     
-     title = request.form.get('title')
-     description = request.form.get('description')
-     url = request.form.get('url')
-     username = session['username']
-     date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'You need to be logged in to create a post'}), 401
 
-     try:
-          insert_db("INSERT INTO job_posts (title, description, url, username, date) VALUES (?, ?, ?, ?, ?)",
-                    (title, description, url, username, date))
-          
-          return jsonify({
-               'success': True,
-               'post': {
-                    'title': title,
-                    'description': description,
-                    'url': url,
-                    'username': username,
-                    'date': date
-               }
-          })
-     except Exception as e:
-          return jsonify({'success': False, 'message': str(e)})
+    title = request.form.get('title')
+    description = request.form.get('description')
+    url = request.form.get('url')
+    username = session['username']
+    date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    user_profile = query_db("SELECT preferred_jobs FROM user_profiles WHERE username = ?", [username], one=True)
+    preferred_jobs = user_profile[0].split(',') if user_profile and user_profile[0] else []
+    matching = any(job.strip().lower() in (title + description).lower() for job in preferred_jobs)
+
+    category = 'personalised' if matching else 'general'
+
+    try:
+        insert_db("INSERT INTO job_posts (title, description, url, username, date) VALUES (?, ?, ?, ?, ?)",
+                  (title, description, url, username, date))
+
+        return jsonify({
+            'success': True,
+            'post': {
+                'title': title,
+                'description': description,
+                'url': url,
+                'username': username,
+                'date': date,
+                'category': category  
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'An error occurred while saving the job post.'}), 500
      
 
 @app.route('/profile', methods=['GET', 'POST'])

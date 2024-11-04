@@ -4,6 +4,7 @@ function showForm() {
 
 function closeForm() {
     document.getElementById('hackathon-form-popup').style.display = 'none';
+    document.getElementById('hackathon-form').reset(); 
 }
 
 document.getElementById("hackathon-form").addEventListener("submit", function (e) {
@@ -17,19 +18,8 @@ document.getElementById("hackathon-form").addEventListener("submit", function (e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const hackathon = data.hackathon;
-            const hackathonElement = document.createElement('div');
-            hackathonElement.classList.add('hackathon-post');
-            hackathonElement.innerHTML = `
-                <h3>${hackathon.title}</h3>
-                <p>${hackathon.description}</p>
-                <p><strong>Date:</strong> ${hackathon.date}</p>
-                <p><strong>Location:</strong> ${hackathon.location}</p>
-                <p><strong>Hackathon ID:</strong> ${hackathon.id}</p> <!-- Display the ID here -->
-                <button class="join-hackathon-btn" onclick="joinHackathon('${hackathon.id}')">Join</button>
-            `;
-            document.getElementById('hackathon-feed').prepend(hackathonElement);
-            closeForm('hackathon-form-popup');
+            addHackathonToFeed(data.hackathon);
+            closeForm();
         } else {
             alert(data.message);
         }
@@ -38,24 +28,33 @@ document.getElementById("hackathon-form").addEventListener("submit", function (e
 });
 
 function addHackathonToFeed(hackathon) {
-    const feed = document.getElementById('hackathon-feed');
-    const newPost = document.createElement('div');
-    newPost.classList.add('hackathon-post');
+    const hackathonElement = document.createElement('div');
+    hackathonElement.classList.add('hackathon-post');
+    if (hackathon.category === 'expired') {
+        hackathonElement.classList.add('expired');
+    }
 
-    newPost.innerHTML = `
+    hackathonElement.innerHTML = `
         <h3>${hackathon.title}</h3>
         <p>${hackathon.description}</p>
         <p><strong>Date:</strong> ${hackathon.date}</p>
         <p><strong>Location:</strong> ${hackathon.location}</p>
+        <p><strong>Hackathon ID:</strong> ${hackathon.id}</p>
+        ${hackathon.category !== 'expired' ? `
+            <button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>
+        ` : '<p class="expired-note">This hackathon has expired.</p>'}
     `;
 
-    feed.prepend(newPost);
-
+    if (hackathon.category === 'matching') {
+        document.getElementById('personalised-hackathons').prepend(hackathonElement);
+    } else if (hackathon.category === 'other') {
+        document.getElementById('other-hackathons').prepend(hackathonElement);
+    } else if (hackathon.category === 'expired') {
+        document.getElementById('expired-hackathons').prepend(hackathonElement);
+    }
 }
 
 function joinHackathon(id) {
-    console.log("Attempting to join hackathon with ID:", id); 
-
     fetch("/join_hackathon", {
         method: "POST",
         headers: {
@@ -66,12 +65,19 @@ function joinHackathon(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            
             const joinButton = document.querySelector(`.join-hackathon-btn[data-id="${id}"]`);
             if (joinButton) {
                 joinButton.textContent = "Joined";
                 joinButton.disabled = true;
-                joinButton.classList.add("joined"); 
+                joinButton.classList.add("joined");
+
+                const calendarButton = document.createElement("button");
+                calendarButton.classList.add("calendar-btn");
+                calendarButton.textContent = "Add to Calendar";
+                calendarButton.onclick = function () {
+                    window.location.href = `/add_to_google_calendar/${id}`;
+                };
+                joinButton.parentElement.appendChild(calendarButton);
             }
         } else {
             alert("Failed to join the hackathon: " + data.message);

@@ -23,16 +23,38 @@
 
     <main class="container">
         <div id="hackathon-feed">
-            {% if matching_hackathons %}
-                <h2>Personalised Hackathons for You</h2>
-                {% for hackathon in matching_hackathons %}
+            <h2>Personalised Hackathons for You</h2>
+            <div id="personalised-hackathons">
+                {% if matching_hackathons %}
+                    {% for hackathon in matching_hackathons %}
+                    <div class="hackathon-post">
+                        <h3>{{ hackathon.title }}</h3>
+                        <p>{{ hackathon.description }}</p>
+                        <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                        <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                        <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
+                        {% if hackathon.joined == 1 %}
+                            <button class="join-hackathon-btn joined" disabled>Joined</button>
+                            <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
+                        {% else %}
+                            <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No personalised hackathons available.</p>
+                {% endif %}
+            </div>
+    
+            <h2>Other Upcoming Hackathons</h2>
+            <div id="other-hackathons">
+                {% for hackathon in other_hackathons %}
                 <div class="hackathon-post">
                     <h3>{{ hackathon.title }}</h3>
                     <p>{{ hackathon.description }}</p>
                     <p><strong>Date:</strong> {{ hackathon.date }}</p>
                     <p><strong>Location:</strong> {{ hackathon.location }}</p>
                     <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
-    
                     {% if hackathon.joined == 1 %}
                         <button class="join-hackathon-btn joined" disabled>Joined</button>
                         <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
@@ -41,37 +63,21 @@
                     {% endif %}
                 </div>
                 {% endfor %}
-            {% endif %}
-    
-            <h2>Other Upcoming Hackathons</h2>
-            {% for hackathon in other_hackathons %}
-            <div class="hackathon-post">
-                <h3>{{ hackathon.title }}</h3>
-                <p>{{ hackathon.description }}</p>
-                <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
-    
-                {% if hackathon.joined == 1 %}
-                    <button class="join-hackathon-btn joined" disabled>Joined</button>
-                    <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
-                {% else %}
-                    <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
-                {% endif %}
             </div>
-            {% endfor %}
     
             <h2>Expired Hackathons</h2>
-            {% for hackathon in expired_hackathons %}
-            <div class="hackathon-post expired">
-                <h3>{{ hackathon.title }}</h3>
-                <p>{{ hackathon.description }}</p>
-                <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
-                <p class="expired-note">This hackathon has expired.</p>
+            <div id="expired-hackathons">
+                {% for hackathon in expired_hackathons %}
+                <div class="hackathon-post expired">
+                    <h3>{{ hackathon.title }}</h3>
+                    <p>{{ hackathon.description }}</p>
+                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                    <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
+                    <p class="expired-note">This hackathon has expired.</p>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </main>
 

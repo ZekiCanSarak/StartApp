@@ -96,21 +96,11 @@ def hack():
     user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
     skill_conditions = " OR ".join([
-        "(title LIKE ? OR title LIKE ? OR title LIKE ? OR description LIKE ? OR description LIKE ? OR description LIKE ?)"
+        "(LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))"
         for _ in user_skills
     ])
     
-    skill_params = []
-    for skill in user_skills:
-        trimmed_skill = skill.strip()
-        skill_params.extend([
-            f"% {trimmed_skill} %",        
-            f"{trimmed_skill} %",           
-            f"% {trimmed_skill}",           
-            f"% {trimmed_skill} %",         
-            f"{trimmed_skill} %",           
-            f"% {trimmed_skill}"            
-        ])
+    skill_params = [f"%{skill.strip().lower()}%" for skill in user_skills for _ in range(2)]
 
     
     matching_hackathons = query_db(f"""
@@ -152,15 +142,26 @@ def post_hackathon():
     location = request.form['location']
 
     try:
-        
         db = get_db()
         cursor = db.cursor()
         cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
                        (title, description, date, location))
         db.commit()
-        
-        
+
         hackathon_id = cursor.lastrowid  
+
+        username = session.get('username')
+        user_skills = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)[0]
+        skill_keywords = [skill.strip().lower() for skill in user_skills.split(',')]
+
+        matching = any(skill in (title + description).lower() for skill in skill_keywords)
+
+        today = datetime.now().date()
+        if datetime.strptime(date, '%Y-%m-%d').date() < today:
+            category = "expired"
+        else:
+            category = "matching" if matching else "other"
+
         
         return jsonify({
             'success': True,
@@ -169,7 +170,9 @@ def post_hackathon():
                 'title': title,
                 'description': description,
                 'date': date,
-                'location': location
+                'location': location,
+                'category': category,
+                'joined': False  
             }
         })
     except Exception as e:

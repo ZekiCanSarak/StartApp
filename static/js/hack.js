@@ -39,10 +39,12 @@ function addHackathonToFeed(hackathon) {
         <p>${hackathon.description}</p>
         <p><strong>Date:</strong> ${hackathon.date}</p>
         <p><strong>Location:</strong> ${hackathon.location}</p>
-        <p><strong>Hackathon ID:</strong> ${hackathon.id}</p>
         ${hackathon.category !== 'expired' ? `
-            <button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>
+            <button class="join-hackathon-btn" onclick="joinHackathon('${hackathon.id}')">Join</button>
         ` : '<p class="expired-note">This hackathon has expired.</p>'}
+        ${hackathon.role === 'organiser' ? `
+            <button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>
+        ` : ''}
     `;
 
     if (hackathon.category === 'matching') {
@@ -84,4 +86,60 @@ function joinHackathon(id) {
         }
     })
     .catch(err => console.error('Error:', err));
+}
+
+function editHackathon(hackathonId) {
+    fetch(`/get_hackathon/${hackathonId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Pre-fill the form with hackathon details
+                document.getElementById('title').value = data.hackathon.title;
+                document.getElementById('description').value = data.hackathon.description;
+                document.getElementById('date').value = data.hackathon.date;
+                document.getElementById('location').value = data.hackathon.location;
+
+                // Show the form in edit mode
+                document.getElementById('hackathon-form-popup').style.display = 'block';
+
+                // Modify the form submission to send to the edit route
+                document.getElementById("hackathon-form").onsubmit = function(e) {
+                    e.preventDefault();
+                    submitHackathonEdit(hackathonId);
+                };
+            } else {
+                alert("Failed to load hackathon details.");
+            }
+        })
+        .catch(error => console.error('Error fetching hackathon:', error));
+}
+
+function submitHackathonEdit(hackathonId) {
+    const formData = new FormData(document.getElementById("hackathon-form"));
+    fetch(`/edit_hackathon/${hackathonId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the hackathon details in the feed
+            updateHackathonInFeed(data.hackathon);
+            closeForm(); // Close the form
+        } else {
+            alert(data.message || "An error occurred while updating the hackathon.");
+        }
+    })
+    .catch(error => console.error('Error editing hackathon:', error));
+}
+
+function updateHackathonInFeed(updatedHackathon) {
+    // Find the existing hackathon element in the feed and update it
+    const hackathonElement = document.querySelector(`.hackathon-post[data-id="${updatedHackathon.id}"]`);
+    if (hackathonElement) {
+        hackathonElement.querySelector('h3').textContent = updatedHackathon.title;
+        hackathonElement.querySelector('.description').textContent = updatedHackathon.description;
+        hackathonElement.querySelector('.date').textContent = `Date: ${updatedHackathon.date}`;
+        hackathonElement.querySelector('.location').textContent = `Location: ${updatedHackathon.location}`;
+    }
 }

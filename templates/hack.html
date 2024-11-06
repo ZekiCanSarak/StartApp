@@ -10,7 +10,9 @@
     <header> 
         <div class="navbar">
             <h1>Hackathons</h1>
+            {% if session.get('role') == 'organiser' %}
             <button class="post-hack-btn" onclick="showForm()">Post New Hackathons</button>
+            {% endif %}
         </div>
     </header>
 
@@ -39,6 +41,10 @@
                         {% else %}
                             <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
                         {% endif %}
+
+                        {% if session.get('role') == 'organiser' %}
+                            <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
@@ -55,11 +61,16 @@
                     <p><strong>Date:</strong> {{ hackathon.date }}</p>
                     <p><strong>Location:</strong> {{ hackathon.location }}</p>
                     <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
+
                     {% if hackathon.joined == 1 %}
                         <button class="join-hackathon-btn joined" disabled>Joined</button>
                         <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">Add to Calendar</button>
                     {% else %}
                         <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
+                    {% endif %}
+
+                    {% if session.get('role') == 'organiser' %}
+                        <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -75,6 +86,10 @@
                     <p><strong>Location:</strong> {{ hackathon.location }}</p>
                     <p><strong>Hackathon ID:</strong> {{ hackathon.id }}</p>
                     <p class="expired-note">This hackathon has expired.</p>
+
+                    {% if session.get('role') == 'organiser' %}
+                        <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>

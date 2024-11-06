@@ -30,33 +30,37 @@ def insert_db(query, args=()):
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-     if request.method == 'POST':
-          if 'signup' in request.form:
-               username = request.form['username']
-               email = request.form['email']
-               password = sha256_crypt.hash(request.form['password'])
-               try:
-                   insert_db("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", (username, email, password))
-                   flash("Signup successful! You can now login", "success")
-               except sqlite3.IntegrityError:
-                   flash ("Username or email already exists", "error")
+    if request.method == 'POST':
+        if 'signup' in request.form:
+            username = request.form['username']
+            email = request.form['email']
+            password = sha256_crypt.hash(request.form['password'])
+            role = request.form.get('role', 'user')  
 
-          elif 'login' in request.form:
-               username = request.form['login_username']
-               password = request.form['login_password']
+            try:
+                insert_db("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)", 
+                          (username, email, password, role))
+                flash("Signup successful! You can now login", "success")
+            except sqlite3.IntegrityError:
+                flash("Username or email already exists", "error")
 
-               user = query_db("SELECT * FROM users WHERE username = ?", [username], one=True)
-               if user and sha256_crypt.verify(password, user[3]):
-                    session['logged_in'] = True
-                    session['username'] = user[1]
-                    flash("Login successful!", "success")
-                    return redirect(url_for('home'))
-               else:
-                    flash("Invalid username or password!", "error")
-          else:
-               flash("User does not exist. Please signup.", "error")
+        elif 'login' in request.form:
+            username = request.form['login_username']
+            password = request.form['login_password']
 
-     if 'username' in session:
+            user = query_db("SELECT * FROM users WHERE username = ?", [username], one=True)
+            if user and sha256_crypt.verify(password, user['password']):
+                session['logged_in'] = True
+                session['username'] = user['username']
+                session['role'] = user['role'] 
+                flash("Login successful!", "success")
+                return redirect(url_for('home'))
+            else:
+                flash("Invalid username or password!", "error")
+        else:
+            flash("User does not exist. Please signup.", "error")
+
+    if 'username' in session:
         username = session['username']
         
         user_profile = query_db("SELECT preferred_jobs FROM user_profiles WHERE username = ?", [username], one=True)
@@ -79,8 +83,8 @@ def home():
 
         return render_template('index.html', logged_in=True, personalised_jobs=personalised_jobs, general_jobs=general_jobs)
 
-     all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
-     return render_template('index.html', logged_in=False, general_jobs=all_jobs)
+    all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
+    return render_template('index.html', logged_in=False, general_jobs=all_jobs)
 
 
 @app.route('/hack', methods=['GET'])
@@ -95,34 +99,41 @@ def hack():
     user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
     user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
-    skill_conditions = " OR ".join([
-        "(LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))"
-        for _ in user_skills
-    ])
-    
-    skill_params = [f"%{skill.strip().lower()}%" for skill in user_skills for _ in range(2)]
+    if user_skills:
+        skill_conditions = " OR ".join([
+            "(LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))"
+            for _ in user_skills
+        ])
+        skill_params = [f"%{skill.strip().lower()}%" for skill in user_skills for _ in range(2)]
 
-    
-    matching_hackathons = query_db(f"""
-        SELECT h.id, h.title, h.description, h.date, h.location,
-               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
-        FROM hackathons h
-        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-        WHERE h.date >= ? AND ({skill_conditions})
-        ORDER BY h.date ASC
-    """, [username, today] + skill_params)
+        matching_hackathons = query_db(f"""
+            SELECT h.id, h.title, h.description, h.date, h.location,
+                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+            FROM hackathons h
+            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+            WHERE h.date >= ? AND ({skill_conditions})
+            ORDER BY h.date ASC
+        """, [username, today] + skill_params)
 
-    
-    other_hackathons = query_db(f"""
-        SELECT h.id, h.title, h.description, h.date, h.location,
-               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
-        FROM hackathons h
-        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-        WHERE h.date >= ? AND NOT ({skill_conditions})
-        ORDER BY h.date ASC
-    """, [username, today] + skill_params)
+        other_hackathons = query_db(f"""
+            SELECT h.id, h.title, h.description, h.date, h.location,
+                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+            FROM hackathons h
+            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+            WHERE h.date >= ? AND NOT ({skill_conditions})
+            ORDER BY h.date ASC
+        """, [username, today] + skill_params)
+    else:
+        matching_hackathons = []
+        other_hackathons = query_db("""
+            SELECT h.id, h.title, h.description, h.date, h.location,
+                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+            FROM hackathons h
+            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+            WHERE h.date >= ?
+            ORDER BY h.date ASC
+        """, [username, today])
 
-    
     expired_hackathons = query_db("""
         SELECT h.id, h.title, h.description, h.date, h.location,
                CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
@@ -136,10 +147,19 @@ def hack():
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'You need to be logged in as an organiser to post a hackathon.'}), 403
+    
     title = request.form['title']
     description = request.form['description']
     date = request.form['date']
     location = request.form['location']
+    
+    username = session.get('username')
+
+    user_role = query_db("SELECT role FROM users WHERE username = ?", [username], one=True)
+    if not user_role or user_role['role'] != 'organiser':
+        return jsonify({'success': False, 'message': 'Only organisers can post hackathons.'}), 403
 
     try:
         db = get_db()
@@ -150,10 +170,10 @@ def post_hackathon():
 
         hackathon_id = cursor.lastrowid  
 
-        username = session.get('username')
-        user_skills = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)[0]
-        skill_keywords = [skill.strip().lower() for skill in user_skills.split(',')]
+        user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
+        user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
+        skill_keywords = [skill.strip().lower() for skill in user_skills]
         matching = any(skill in (title + description).lower() for skill in skill_keywords)
 
         today = datetime.now().date()
@@ -162,7 +182,6 @@ def post_hackathon():
         else:
             category = "matching" if matching else "other"
 
-        
         return jsonify({
             'success': True,
             'hackathon': {
@@ -172,12 +191,66 @@ def post_hackathon():
                 'date': date,
                 'location': location,
                 'category': category,
-                'joined': False  
+                'joined': False , 
+                'role': user_role['role']
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'}), 500
+    
+
+@app.route('/edit_hackathon/<int:hackathon_id>', methods=['POST'])
+def edit_hackathon(hackathon_id):
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'You need to be logged in to edit a hackathon'}), 401
+
+    username = session['username']
+    user_role = query_db("SELECT role FROM users WHERE username = ?", [username], one=True)['role']
+    if user_role != 'organiser':
+        return jsonify({'success': False, 'message': 'Only organisers can edit hackathons'}), 403
+
+    title = request.form['title']
+    description = request.form['description']
+    date = request.form['date']
+    location = request.form['location']
+
+    try:
+        db = get_db()
+        db.execute("""
+            UPDATE hackathons
+            SET title = ?, description = ?, date = ?, location = ?
+            WHERE id = ?
+        """, (title, description, date, location, hackathon_id))
+        db.commit()
+
+        return jsonify({
+            'success': True,
+            'hackathon': {
+                'id': hackathon_id,
+                'title': title,
+                'description': description,
+                'date': date,
+                'location': location
             }
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-     
+
+@app.route('/get_hackathon/<int:hackathon_id>', methods=['GET'])
+def get_hackathon(hackathon_id):
+    hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+    if hackathon:
+        return jsonify({
+            'success': True,
+            'hackathon': {
+                'id': hackathon['id'],
+                'title': hackathon['title'],
+                'description': hackathon['description'],
+                'date': hackathon['date'],
+                'location': hackathon['location']
+            }
+        })
+    return jsonify({'success': False, 'message': 'Hackathon not found.'})
 
 @app.route('/create_post', methods=['POST'])
 def create_post():

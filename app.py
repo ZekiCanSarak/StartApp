@@ -147,68 +147,60 @@ def hack():
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
-    if 'username' not in session:
-        return jsonify({'success': False, 'message': 'You need to be logged in as an organiser to post a hackathon.'}), 403
-    
     title = request.form['title']
     description = request.form['description']
     date = request.form['date']
     location = request.form['location']
-    
-    username = session.get('username')
-
-    user_role = query_db("SELECT role FROM users WHERE username = ?", [username], one=True)
-    if not user_role or user_role['role'] != 'organiser':
-        return jsonify({'success': False, 'message': 'Only organisers can post hackathons.'}), 403
+    hackathon_id = request.form.get('hackathon_id')  # For edit mode
 
     try:
         db = get_db()
         cursor = db.cursor()
-        cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
-                       (title, description, date, location))
+
+        if hackathon_id:
+            # Edit existing hackathon
+            cursor.execute("""
+                UPDATE hackathons
+                SET title = ?, description = ?, date = ?, location = ?
+                WHERE id = ?
+            """, (title, description, date, location, hackathon_id))
+        else:
+            cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
+                           (title, description, date, location))
+            hackathon_id = cursor.lastrowid
+
         db.commit()
 
-        hackathon_id = cursor.lastrowid  
-
-        user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
-        user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
-
-        skill_keywords = [skill.strip().lower() for skill in user_skills]
-        matching = any(skill in (title + description).lower() for skill in skill_keywords)
-
+        # Retrieving updated data to determine category
+        updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
         today = datetime.now().date()
-        if datetime.strptime(date, '%Y-%m-%d').date() < today:
-            category = "expired"
-        else:
-            category = "matching" if matching else "other"
+        category = "expired" if updated_hackathon['date'] < str(today) else "other"
+
+        username = session.get('username')
+        user_skills = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
+        skill_keywords = [skill.strip().lower() for skill in user_skills[0].split(',')] if user_skills else []
+        if any(skill in (title + description).lower() for skill in skill_keywords):
+            category = "matching"
 
         return jsonify({
             'success': True,
             'hackathon': {
-                'id': hackathon_id,
-                'title': title,
-                'description': description,
-                'date': date,
-                'location': location,
+                'id': updated_hackathon['id'],
+                'title': updated_hackathon['title'],
+                'description': updated_hackathon['description'],
+                'date': updated_hackathon['date'],
+                'location': updated_hackathon['location'],
                 'category': category,
-                'joined': False , 
-                'role': user_role['role']
+                'joined': False,
+                'role': 'organiser'
             }
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'}), 500
+        return jsonify({'success': False, 'message': str(e)})
     
 
 @app.route('/edit_hackathon/<int:hackathon_id>', methods=['POST'])
 def edit_hackathon(hackathon_id):
-    if 'username' not in session:
-        return jsonify({'success': False, 'message': 'You need to be logged in to edit a hackathon'}), 401
-
-    username = session['username']
-    user_role = query_db("SELECT role FROM users WHERE username = ?", [username], one=True)['role']
-    if user_role != 'organiser':
-        return jsonify({'success': False, 'message': 'Only organisers can edit hackathons'}), 403
-
     title = request.form['title']
     description = request.form['description']
     date = request.form['date']
@@ -216,25 +208,33 @@ def edit_hackathon(hackathon_id):
 
     try:
         db = get_db()
-        db.execute("""
+        cursor = db.cursor()
+        cursor.execute("""
             UPDATE hackathons
             SET title = ?, description = ?, date = ?, location = ?
             WHERE id = ?
         """, (title, description, date, location, hackathon_id))
         db.commit()
 
+        # Fetching updated hackathon data to return to the client
+        updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+        category = "expired" if updated_hackathon['date'] < str(datetime.now().date()) else "other"
+
         return jsonify({
             'success': True,
             'hackathon': {
-                'id': hackathon_id,
-                'title': title,
-                'description': description,
-                'date': date,
-                'location': location
+                'id': updated_hackathon['id'],
+                'title': updated_hackathon['title'],
+                'description': updated_hackathon['description'],
+                'date': updated_hackathon['date'],
+                'location': updated_hackathon['location'],
+                'category': category,
+                'role': 'organiser'
             }
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': str(e)}), 500
+    
 
 @app.route('/get_hackathon/<int:hackathon_id>', methods=['GET'])
 def get_hackathon(hackathon_id):

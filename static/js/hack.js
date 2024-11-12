@@ -8,11 +8,10 @@ function showForm(isEdit = false) {
     saveButton.style.display = isEdit ? 'inline-block' : 'none';
 }
 
-
 function closeForm() {
     document.getElementById('hackathon-form-popup').style.display = 'none';
     document.getElementById('hackathon-form').reset();
-    document.getElementById('hackathon_id').value = ''; // Reset the hackathon_id
+    document.getElementById('hackathon_id').value = ''; 
 }
 
 document.getElementById("hackathon-form").addEventListener("submit", function (e) {
@@ -45,39 +44,48 @@ document.getElementById("hackathon-form").addEventListener("submit", function (e
 
 function addHackathonToFeed(hackathon) {
     const hackathonIdStr = String(hackathon.id);
-    const hackathonElement = document.querySelector(`.hackathon-post[data-id="${hackathonIdStr}"]`);
+    let hackathonElement = document.querySelector(`.hackathon-post[data-id="${hackathonIdStr}"]`);
 
     if (hackathonElement) {
-        // Updating existing hackathon in place
-        hackathonElement.querySelector('h3').textContent = hackathon.title;
-        hackathonElement.querySelector('.description').textContent = hackathon.description;
-        hackathonElement.querySelector('.date').innerHTML = `<strong>Date:</strong> ${hackathon.date}`;
-        hackathonElement.querySelector('.location').innerHTML = `<strong>Location:</strong> ${hackathon.location}`;
-    } else {
-        // Creating a new hackathon element if it doesn't already exist
-        const newHackathonElement = document.createElement('div');
-        newHackathonElement.classList.add('hackathon-post');
-        newHackathonElement.setAttribute('data-id', hackathonIdStr);
 
-        const joinButtonHTML = hackathon.joined ? 
-            '<button class="join-hackathon-btn joined" disabled>Joined</button>' : 
-            `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`;
-
-        newHackathonElement.innerHTML = `
+        const currentParticipants = hackathonElement.querySelector('.participants-info') ? 
+        // Preserving the existing participant count and joined status
+        hackathonElement.querySelector('.participants-info').textContent.match(/\d+/)[0] : hackathon.current_participants;
+        hackathon.current_participants = currentParticipants;
+        
+        hackathonElement.innerHTML = `
             <h3>${hackathon.title}</h3>
             <p class="description">${hackathon.description}</p>
             <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
             <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
-            ${hackathon.category !== 'expired' ? joinButtonHTML : '<p class="expired-note">This hackathon has expired.</p>'}
+            <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
+            ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
+            ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
+            ${hackathon.role === 'organiser' ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
+        `;
+    } else {
+        // Handle to creating a new element
+        hackathonElement = document.createElement('div');
+        hackathonElement.classList.add('hackathon-post');
+        hackathonElement.setAttribute('data-id', hackathonIdStr);
+
+        hackathonElement.innerHTML = `
+            <h3>${hackathon.title}</h3>
+            <p class="description">${hackathon.description}</p>
+            <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
+            <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
+            <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
+            ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
+            ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
             ${hackathon.role === 'organiser' ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
         `;
 
-        const targetSection = hackathon.category === 'matching' ? '#personalised-hackathons' :
-                              hackathon.category === 'other' ? '#other-hackathons' : '#expired-hackathons';
-        
-        document.querySelector(targetSection).prepend(newHackathonElement);
+        const targetSection = hackathon.category === 'matching' ? '#personalised-hackathons'
+                            : hackathon.category === 'other' ? '#other-hackathons'
+                            : '#expired-hackathons';
 
-        // Removing "No personalised hackathons available" message if adding to personalised section
+        document.querySelector(targetSection).prepend(hackathonElement);
+
         if (hackathon.category === 'matching') {
             const noPersonalisedMessage = document.getElementById("no-personalised-message");
             if (noPersonalisedMessage) {
@@ -85,43 +93,60 @@ function addHackathonToFeed(hackathon) {
             }
         }
     }
+
     closeForm();
 }
 
 function joinHackathon(id) {
+    const hackathonElement = document.querySelector(`.hackathon-post[data-id="${id}"]`);
+    const participantsInfo = hackathonElement.querySelector('.participants-info').textContent;
+    
+    // Extracting current and max participants from the text
+    const [currentParticipants, maxParticipants] = participantsInfo.match(/\d+/g).map(Number);
+    
+    // Checking if the hackathon is already full
+    if (currentParticipants >= maxParticipants) {
+        alert("Max limit reached. You cannot join this hackathon.");
+        return;
+    }
+
+    // Goes to send the join request if the hackathon is not full
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/join_hackathon", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             const response = JSON.parse(xhr.responseText);
+            console.log("Join Hackathon Response:", response);
+
             if (response.success) {
-                const joinButton = document.querySelector(`.join-hackathon-btn[data-id="${id}"]`);
+                // Updating participants info
+                let participantsElement = hackathonElement.querySelector('.participants-info');
+                participantsElement.textContent = `Participants: ${response.current_participants} / ${response.max_participants}`;
+                
+                // Updating the join button to 'Joined' and disable it
+                const joinButton = hackathonElement.querySelector('.join-hackathon-btn');
                 if (joinButton) {
                     joinButton.textContent = "Joined";
                     joinButton.disabled = true;
                     joinButton.classList.add("joined");
-
-                    const calendarButton = document.createElement("button");
-                    calendarButton.classList.add("calendar-btn");
-                    calendarButton.textContent = "Add to Calendar";
-                    calendarButton.onclick = function () {
-                        window.location.href = `/add_to_google_calendar/${id}`;
-                    };
-                    joinButton.parentElement.appendChild(calendarButton);
                 }
+
+                // Adding calendar button if applicable
+                const calendarButton = document.createElement("button");
+                calendarButton.classList.add("calendar-btn");
+                calendarButton.textContent = "Add to Calendar";
+                calendarButton.onclick = () => location.href = `/add_to_google_calendar/${id}`;
+                hackathonElement.appendChild(calendarButton);
+
             } else {
-                alert("Failed to join the hackathon: " + response.message);
+                alert("Failed to join hackathon: " + (response.message || "Unknown error"));
             }
-        } else if (xhr.readyState === 4) {
-            console.error("Error:", xhr.statusText);
-            alert("An error occurred while joining the hackathon.");
         }
     };
     xhr.send(JSON.stringify({ id: id }));
 }
 
-// Fetching and populating form for editing
 function editHackathon(hackathonId) {
     const xhr = new XMLHttpRequest();
     xhr.open("GET", `/get_hackathon/${hackathonId}`, true);
@@ -133,6 +158,7 @@ function editHackathon(hackathonId) {
                 document.getElementById('description').value = response.hackathon.description;
                 document.getElementById('date').value = response.hackathon.date;
                 document.getElementById('location').value = response.hackathon.location;
+                document.getElementById('max_participants').value = response.hackathon.max_participants || ''; // Ensuring that max_participants is loaded
                 document.getElementById('hackathon_id').value = hackathonId;
                 showForm(true);
             } else {
@@ -156,7 +182,16 @@ function submitHackathonEdit() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            addHackathonToFeed(data.hackathon);  // Updating hackathon directly in feed
+            const existingHackathonElement = document.querySelector(`.hackathon-post[data-id="${hackathonId}"]`);
+            if (existingHackathonElement) {
+                // Extracting current participants and joined status
+                const participantsInfo = existingHackathonElement.querySelector('.participants-info');
+                const currentParticipantsText = participantsInfo ? participantsInfo.textContent.match(/\d+/g) : [data.hackathon.current_participants];
+                data.hackathon.current_participants = currentParticipantsText[0];
+                data.hackathon.joined = existingHackathonElement.querySelector('.join-hackathon-btn.joined') !== null;
+            }
+
+            addHackathonToFeed(data.hackathon);  // Updating hackathon in feed
             closeForm();  
         } else {
             alert(data.message || "An error occurred while updating the hackathon.");

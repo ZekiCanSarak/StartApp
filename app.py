@@ -99,51 +99,61 @@ def hack():
     user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
     user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
+    hackathon_base_query = """
+        SELECT h.id, h.title, h.description, h.date, h.location, h.max_participants,
+               COUNT(p.id) AS current_participants,
+               CASE WHEN p2.username IS NOT NULL THEN 1 ELSE 0 END AS joined  -- Check if user has joined
+        FROM hackathons h
+        LEFT JOIN participants p ON h.id = p.hackathon_id
+        LEFT JOIN participants p2 ON h.id = p2.hackathon_id AND p2.username = ?  -- Check join status
+        WHERE h.date >= ?
+    """
+    
+    # Adding skill matching for personalised hackathons
     if user_skills:
         skill_conditions = " OR ".join([
-            "(LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))"
+            "(LOWER(h.title) LIKE LOWER(?) OR LOWER(h.description) LIKE LOWER(?))"
             for _ in user_skills
         ])
         skill_params = [f"%{skill.strip().lower()}%" for skill in user_skills for _ in range(2)]
 
         matching_hackathons = query_db(f"""
-            SELECT h.id, h.title, h.description, h.date, h.location,
-                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
-            FROM hackathons h
-            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-            WHERE h.date >= ? AND ({skill_conditions})
+            {hackathon_base_query} AND ({skill_conditions})
+            GROUP BY h.id
             ORDER BY h.date ASC
         """, [username, today] + skill_params)
 
         other_hackathons = query_db(f"""
-            SELECT h.id, h.title, h.description, h.date, h.location,
-                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
-            FROM hackathons h
-            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-            WHERE h.date >= ? AND NOT ({skill_conditions})
+            {hackathon_base_query} AND NOT ({skill_conditions})
+            GROUP BY h.id
             ORDER BY h.date ASC
         """, [username, today] + skill_params)
     else:
         matching_hackathons = []
-        other_hackathons = query_db("""
-            SELECT h.id, h.title, h.description, h.date, h.location,
-                   CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
-            FROM hackathons h
-            LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
-            WHERE h.date >= ?
+        other_hackathons = query_db(f"""
+            {hackathon_base_query}
+            GROUP BY h.id
             ORDER BY h.date ASC
         """, [username, today])
 
     expired_hackathons = query_db("""
-        SELECT h.id, h.title, h.description, h.date, h.location,
-               CASE WHEN p.username IS NOT NULL THEN 1 ELSE 0 END AS joined
+        SELECT h.id, h.title, h.description, h.date, h.location, h.max_participants,
+               COUNT(p.id) AS current_participants,
+               CASE WHEN p2.username IS NOT NULL THEN 1 ELSE 0 END AS joined  -- Check join status for expired hackathons
         FROM hackathons h
-        LEFT JOIN participants p ON h.id = p.hackathon_id AND p.username = ?
+        LEFT JOIN participants p ON h.id = p.hackathon_id
+        LEFT JOIN participants p2 ON h.id = p2.hackathon_id AND p2.username = ?
         WHERE h.date < ?
+        GROUP BY h.id
         ORDER BY h.date DESC
     """, [username, today])
 
-    return render_template('hack.html', matching_hackathons=matching_hackathons, other_hackathons=other_hackathons, expired_hackathons=expired_hackathons)
+    return render_template(
+        'hack.html', 
+        matching_hackathons=matching_hackathons, 
+        other_hackathons=other_hackathons, 
+        expired_hackathons=expired_hackathons
+    )
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
@@ -151,6 +161,7 @@ def post_hackathon():
     description = request.form['description']
     date = request.form['date']
     location = request.form['location']
+    max_participants = request.form.get('max_participants', type=int)
     hackathon_id = request.form.get('hackathon_id')  # For edit mode
 
     try:
@@ -158,29 +169,43 @@ def post_hackathon():
         cursor = db.cursor()
 
         if hackathon_id:
-            # Edit existing hackathon
+            # Editing existing hackathon
             cursor.execute("""
                 UPDATE hackathons
-                SET title = ?, description = ?, date = ?, location = ?
+                SET title = ?, description = ?, date = ?, location = ?, max_participants = ?
                 WHERE id = ?
-            """, (title, description, date, location, hackathon_id))
+            """, (title, description, date, location, max_participants, hackathon_id))
+            
+            # Getting current participant count and checking if user has joined
+            current_participants = query_db(
+                "SELECT COUNT(*) FROM participants WHERE hackathon_id = ?", [hackathon_id], one=True
+            )[0]
+            joined = bool(query_db(
+                "SELECT 1 FROM participants WHERE hackathon_id = ? AND username = ?", 
+                [hackathon_id, session.get('username')], one=True
+            ))
         else:
-            cursor.execute("INSERT INTO hackathons (title, description, date, location) VALUES (?, ?, ?, ?)",
-                           (title, description, date, location))
+            # Creating a new hackathon
+            cursor.execute("INSERT INTO hackathons (title, description, date, location, max_participants) VALUES (?, ?, ?, ?, ?)",
+                           (title, description, date, location, max_participants))
             hackathon_id = cursor.lastrowid
+            current_participants = 0
+            joined = False
 
         db.commit()
 
-        # Retrieving updated data to determine category
-        updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+        # Determining the category based on date and skills
         today = datetime.now().date()
-        category = "expired" if updated_hackathon['date'] < str(today) else "other"
+        category = "expired" if datetime.strptime(date, "%Y-%m-%d").date() < today else "other"
 
-        username = session.get('username')
-        user_skills = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
-        skill_keywords = [skill.strip().lower() for skill in user_skills[0].split(',')] if user_skills else []
-        if any(skill in (title + description).lower() for skill in skill_keywords):
-            category = "matching"
+        if 'username' in session:
+            username = session['username']
+            user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
+            user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
+            if any(skill.strip().lower() in (title + description).lower() for skill in user_skills):
+                category = "matching"
+
+        updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
 
         return jsonify({
             'success': True,
@@ -190,12 +215,15 @@ def post_hackathon():
                 'description': updated_hackathon['description'],
                 'date': updated_hackathon['date'],
                 'location': updated_hackathon['location'],
+                'current_participants': current_participants,
+                'max_participants': updated_hackathon['max_participants'],
                 'category': category,
-                'joined': False,
-                'role': 'organiser'
+                'joined': joined,
+                'role': session.get('role', 'user')
             }
         })
     except Exception as e:
+        print(f"Error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
     
 
@@ -240,6 +268,9 @@ def edit_hackathon(hackathon_id):
 def get_hackathon(hackathon_id):
     hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
     if hackathon:
+        current_participants = query_db("SELECT COUNT(*) FROM participants WHERE hackathon_id = ?", [hackathon_id], one=True)[0]
+        is_organizer = session.get('role') == 'organiser'
+        
         return jsonify({
             'success': True,
             'hackathon': {
@@ -247,7 +278,10 @@ def get_hackathon(hackathon_id):
                 'title': hackathon['title'],
                 'description': hackathon['description'],
                 'date': hackathon['date'],
-                'location': hackathon['location']
+                'location': hackathon['location'],
+                'max_participants': hackathon['max_participants'],
+                'current_participants': current_participants,
+                'joined': not is_organizer  # Setting joined to False for organisers
             }
         })
     return jsonify({'success': False, 'message': 'Hackathon not found.'})
@@ -326,19 +360,34 @@ def join_hackathon():
         return jsonify({"success": False, "message": "Please log in to join a hackathon."})
 
     data = request.get_json()
-    id = data.get('id')  
+    hackathon_id = data.get('id')
     username = session['username']
 
-    
+    # Checking if the user is already a participant
     existing_entry = query_db("SELECT * FROM participants WHERE hackathon_id = ? AND username = ?", 
-                              (id, username), one=True)
-
+                              (hackathon_id, username), one=True)
     if existing_entry:
         return jsonify({"success": False, "message": "You have already joined this hackathon."})
 
+    # Incrementing the current participant count if there's room
+    hackathon = query_db("SELECT max_participants, current_participants FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+    if hackathon['current_participants'] >= hackathon['max_participants']:
+        return jsonify({"success": False, "message": "This hackathon has reached the maximum number of participants."})
+
     try:
-        insert_db("INSERT INTO participants (hackathon_id, username) VALUES (?, ?)", (id, username))
-        return jsonify({"success": True})
+        # Inserting participant and incrementing current_participants
+        insert_db("INSERT INTO participants (hackathon_id, username) VALUES (?, ?)", (hackathon_id, username))
+        updated_count = query_db("SELECT COUNT(*) FROM participants WHERE hackathon_id = ?", [hackathon_id], one=True)[0]
+        
+        # Debug log for updated participant count
+        print(f"Updated participant count for hackathon {hackathon_id}: {updated_count}")
+        
+        # Returning updated count and success status
+        return jsonify({
+            "success": True,
+            "current_participants": updated_count,
+            "max_participants": hackathon['max_participants']
+        })
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
     

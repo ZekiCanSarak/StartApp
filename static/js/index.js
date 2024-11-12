@@ -3,26 +3,27 @@ function toggleForm(formId) {
     const otherFormId = formId === 'loginForm' ? 'signupForm' : 'loginForm';
     const otherForm = document.getElementById(otherFormId);
 
-
-    if (form.style.display === 'block') {
-        form.style.display = 'none';
-    } else {
-        form.style.display = 'block';
+    if (form) {
+        form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    }
+    if (otherForm) {
         otherForm.style.display = 'none';
     }
 }
 
 function closeForm(formId) {
-    document.getElementById(formId).style.display = 'none';
-    document.getElementById(formId).reset();
+    const form = document.getElementById(formId);
+    if (form) {
+        form.style.display = 'none';
+        form.reset();
+    }
 }
 
 function showForm(formId) {
-    document.getElementById(formId).style.display = 'block';
-}
-
-function closeForm(formId) {
-    document.getElementById(formId).style.display = 'none';
+    const form = document.getElementById(formId);
+    if (form) {
+        form.style.display = 'block';
+    }
 }
 
 function resetForm(formId) {
@@ -32,38 +33,41 @@ function resetForm(formId) {
     }
 }
 
-document.getElementById("postForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
+const postForm = document.getElementById("postForm");
+if (postForm) {
+    postForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
 
-    const formData = new FormData(this);
+        try {
+            const response = await fetch("/create_post", {
+                method: "POST",
+                body: formData
+            });
 
-    try {
-        const response = await fetch("/create_post", {
-            method: "POST",
-            body: formData
-        });
-
-        if (response.ok) {  
-            const data = await response.json();
-            
-            if (data.success) {
-                addJobToFeed(data.post); 
-                closeForm("postFormPopup");  
-                resetForm("postForm");      
-                return;
+            if (response.ok) {  
+                const data = await response.json();
+                
+                if (data.success) {
+                    addJobToFeed(data.post); 
+                    closeForm("postFormPopup");  
+                    resetForm("postForm");      
+                    return;
+                } else {
+                    console.error("Backend error:", data.message);
+                    alert(data.message || "An error occurred while posting the job.");
+                }
             } else {
-                console.error("Backend error:", data.message);
-                alert(data.message || "An error occurred while posting the job.");
+                console.error("Non-200 status from server:", response.status);
+                alert("An error occurred while posting the job. Please try again.");
             }
-        } else {
-            console.error("Non-200 status from server:", response.status);
+        } catch (err) {
+            console.error('Fetch error:', err);
             alert("An error occurred while posting the job. Please try again.");
         }
-    } catch (err) {
-        console.error('Fetch error:', err);
-        alert("An error occurred while posting the job. Please try again.");
-    }
-});
+    });
+}
 
 function addJobToFeed(job) {
     const jobElement = document.createElement('div');
@@ -77,5 +81,7 @@ function addJobToFeed(job) {
     `;
 
     const feed = document.getElementById(job.category === 'personalised' ? 'personalised-jobs' : 'general-jobs');
-    feed.prepend(jobElement);
+    if (feed) {
+        feed.prepend(jobElement);
+    }
 }

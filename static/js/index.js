@@ -15,7 +15,6 @@ function closeForm(formId) {
     const form = document.getElementById(formId);
     if (form) {
         form.style.display = 'none';
-        form.reset();
     }
 }
 

@@ -47,12 +47,6 @@ function addHackathonToFeed(hackathon) {
     let hackathonElement = document.querySelector(`.hackathon-post[data-id="${hackathonIdStr}"]`);
 
     if (hackathonElement) {
-
-        const currentParticipants = hackathonElement.querySelector('.participants-info') ? 
-        // Preserving the existing participant count and joined status
-        hackathonElement.querySelector('.participants-info').textContent.match(/\d+/)[0] : hackathon.current_participants;
-        hackathon.current_participants = currentParticipants;
-        
         hackathonElement.innerHTML = `
             <h3>${hackathon.title}</h3>
             <p class="description">${hackathon.description}</p>
@@ -61,10 +55,9 @@ function addHackathonToFeed(hackathon) {
             <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
             ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
             ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
-            ${hackathon.role === 'organiser' ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
+            ${hackathon.created_by === hackathon.current_user ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
         `;
     } else {
-        // Handle to creating a new element
         hackathonElement = document.createElement('div');
         hackathonElement.classList.add('hackathon-post');
         hackathonElement.setAttribute('data-id', hackathonIdStr);
@@ -77,7 +70,7 @@ function addHackathonToFeed(hackathon) {
             <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
             ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
             ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
-            ${hackathon.role === 'organiser' ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
+            ${hackathon.created_by === hackathon.current_user ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
         `;
 
         const targetSection = hackathon.category === 'matching' ? '#personalised-hackathons'

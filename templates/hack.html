@@ -42,7 +42,7 @@
                             <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
                         {% endif %}
                     
-                        {% if session.get('role') == 'organiser' %}
+                        {% if session.get('username') == hackathon.created_by %}
                             <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
                         {% endif %}
                     </div>
@@ -69,7 +69,7 @@
                         <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">Join</button>
                     {% endif %}
 
-                    {% if session.get('role') == 'organiser' %}
+                    {% if session.get('username') == hackathon.created_by %}
                         <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
                     {% endif %}
                 </div>
@@ -87,7 +87,7 @@
                     <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
                     <p class="expired-note">This hackathon has expired.</p>
 
-                    {% if session.get('role') == 'organiser' %}
+                    {% if session.get('username') == hackathon.created_by %}
                         <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">Edit</button>
                     {% endif %}
                 </div>

@@ -32,116 +32,136 @@
 
     <main class="container">
         <div id="hackathon-feed">
-            <h2>Personalised Hackathons for You</h2>
-            <div id="personalised-hackathons">
-                {% if matching_hackathons %}
-                    {% for hackathon in matching_hackathons %}
+    
+            <div class="category-container">
+                <h2>Personalised Hackathons for You:</h2>
+                <div id="personalised-hackathons">
+                    {% if matching_hackathons %}
+                        {% for hackathon in matching_hackathons %}
+                        <div class="hackathon-post" data-id="{{ hackathon.id }}">
+                            <h3>{{ hackathon.title }}</h3>
+                            <p>{{ hackathon.description }}</p>
+                            <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                            <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                            <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
+                            <div class="button-group">
+                                {% if hackathon.joined == 1 %}
+                                    <button class="join-hackathon-btn joined" disabled>Joined</button>
+                                    <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
+                                        <i class="fas fa-calendar-plus"></i> Add to Calendar
+                                    </button>
+                                {% else %}
+                                    <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
+                                        <i class="fas fa-user-plus"></i> Join
+                                    </button>
+                                {% endif %}
+                                {% if session.get('username') == hackathon.created_by %}
+                                    <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p id="no-personalised-message">No personalised hackathons available.</p>
+                    {% endif %}
+                </div>
+            </div>
+    
+            <div class="category-container">
+                <h2>Other Upcoming Hackathons:</h2>
+                <div id="other-hackathons">
+                    {% for hackathon in other_hackathons %}
                     <div class="hackathon-post" data-id="{{ hackathon.id }}">
                         <h3>{{ hackathon.title }}</h3>
                         <p>{{ hackathon.description }}</p>
                         <p><strong>Date:</strong> {{ hackathon.date }}</p>
                         <p><strong>Location:</strong> {{ hackathon.location }}</p>
                         <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                        {% if hackathon.joined == 1 %}
-                            <button class="join-hackathon-btn joined" disabled>Joined</button>
-                            <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
-                                <i class="fas fa-calendar-plus"></i> Add to Calendar
-                            </button>
-                        {% else %}
-                            <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
-                                <i class="fas fa-user-plus"></i> Join
-                            </button>
-                        {% endif %}
-                    
-                        {% if session.get('username') == hackathon.created_by %}
-                            <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                        {% endif %}
+                        <div class="button-group">
+                            {% if hackathon.joined == 1 %}
+                                <button class="join-hackathon-btn joined" disabled>Joined</button>
+                                <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
+                                    <i class="fas fa-calendar-plus"></i> Add to Calendar
+                                </button>
+                            {% else %}
+                                <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
+                                    <i class="fas fa-user-plus"></i> Join
+                                </button>
+                            {% endif %}
+                            {% if session.get('username') == hackathon.created_by %}
+                                <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
-                {% else %}
-                    <p id="no-personalised-message">No personalised hackathons available.</p>
-                {% endif %}
+                </div>
             </div>
     
-            <h2>Other Upcoming Hackathons</h2>
-            <div id="other-hackathons">
-                {% for hackathon in other_hackathons %}
-                <div class="hackathon-post" data-id="{{ hackathon.id }}">
-                    <h3>{{ hackathon.title }}</h3>
-                    <p>{{ hackathon.description }}</p>
-                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                    <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-
-                    {% if hackathon.joined == 1 %}
-                        <button class="join-hackathon-btn joined" disabled>Joined</button>
-                        <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
-                            <i class="fas fa-calendar-plus"></i> Add to Calendar
-                        </button>
-                    {% else %}
-                        <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
-                            <i class="fas fa-user-plus"></i> Join
-                        </button>
-                    {% endif %}
-
-                    {% if session.get('username') == hackathon.created_by %}
-                        <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    {% endif %}
+            <div class="category-container">
+                <h2>Expired Hackathons:</h2>
+                <div id="expired-hackathons">
+                    {% for hackathon in expired_hackathons %}
+                    <div class="hackathon-post expired">
+                        <h3>{{ hackathon.title }}</h3>
+                        <p>{{ hackathon.description }}</p>
+                        <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                        <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                        <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
+                        <p class="expired-note"><i class="fas fa-exclamation-circle"></i> This hackathon has expired.</p>
+                        <div class="button-group">
+                            {% if session.get('username') == hackathon.created_by %}
+                                <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
-    
-            <h2>Expired Hackathons</h2>
-            <div id="expired-hackathons">
-                {% for hackathon in expired_hackathons %}
-                <div class="hackathon-post expired">
-                    <h3>{{ hackathon.title }}</h3>
-                    <p>{{ hackathon.description }}</p>
-                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                    <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                    <p class="expired-note"><i class="fas fa-exclamation-circle"></i> This hackathon has expired.</p>
-
-                    {% if session.get('username') == hackathon.created_by %}
-                        <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
+            
         </div>
     </main>
 
     <div id="hackathon-form-popup" class="form-popup">
+        <h2>Create/Edit Hackathon</h2>
         <form id="hackathon-form" action="/post_hackathon" method="POST">
             <input type="hidden" name="hackathon_id" id="hackathon_id">
-            <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required><br>
-
-            <label for="description">Description:</label>
-            <textarea id="description" name="description" required></textarea><br>
-
-            <label for="date">Date:</label>
-            <input type="date" id="date" name="date" required><br>
-
-            <label for="location">Location:</label>
-            <input type="text" id="location" name="location" required><br>
-
-            <label for="max_participants">Max Participants:</label>
-            <input type="number" id="max_participants" name="max_participants" min="1" required><br>
-
-            <button type="submit">Post</button>
-            <button type="submit" id="save-button" style="display: none;">
-                <i class="fas fa-save"></i> Save
-            </button>
-            <button type="button" onclick="closeForm()">
-                <i class="fas fa-times-circle"></i> Cancel
-            </button>
+    
+            <div class="input-group">
+                <input type="text" id="title" name="title" placeholder=" " required>
+                <label for="title">Title</label>
+            </div>
+    
+            <div class="input-group">
+                <textarea id="description" name="description" placeholder=" " rows="4" required></textarea>
+                <label for="description">Description</label>
+            </div>
+    
+            <div class="input-group">
+                <input type="date" id="date" name="date" placeholder=" " required>
+                <label for="date">Date</label>
+            </div>
+    
+            <div class="input-group">
+                <input type="text" id="location" name="location" placeholder=" " required>
+                <label for="location">Location</label>
+            </div>
+    
+            <div class="input-group">
+                <input type="number" id="max_participants" name="max_participants" placeholder=" " min="1" required>
+                <label for="max_participants">Max Participants</label>
+            </div>
+    
+            <button type="submit" id="post-button">Post</button>
+    
+            <button type="submit" id="save-button" style="display: none;">Save Changes</button>
+    
+            <button type="button" class="cancel-btn" onclick="closeForm()">Cancel</button>
         </form>
     </div>
     <script src="{{ url_for('static', filename='js/hack.js') }}"></script>

@@ -10,7 +10,8 @@ body {
     font-weight: 400;
     font-style: normal;
     background-color: #f4f4f4;
-  }
+    color: #333;
+}
 
 .navbar {
     background-color: #0073b1;
@@ -29,14 +30,20 @@ body {
     background-color: #4CAF50;
     color: white;
     border: none;
-    padding: 10px;
+    padding: 5px 10px;
     cursor: pointer;
     border-radius: 5px;
-    margin-right: 5px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: auto; 
+    text-align: center; 
+    line-height: 2;
 }
 
 .navbar .post-hack-btn:hover {
     background-color: #45a049;
+    transform: translateY(-1px);
 }
 
 .sidebar {
@@ -63,31 +70,47 @@ body {
 }
 
 .container {
-    width: 70%;
-    margin: 20px auto;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-left: 25%;
 }
 
-#hackathon-feed {
+.category-container {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    padding: 20px;
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
+    max-width: 800px;
+}
+
+.category-container h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #0073b1;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 .hackathon-post {
-    background-color: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #ddd;
     width: 100%;
     max-width: 600px;
-    word-wrap: break-word;
+    margin: 10px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hackathon-post:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hackathon-post h3,
@@ -97,15 +120,16 @@ body {
     color: #333;
 }
 
-.participants{
+.participants-info {
     text-align: left;
-    margin: 5px 0;
-    color:#333;
+    margin: 10px 0;
+    color: #0073b1;
+    font-weight: bold;
 }
 
-.expired {
+.hackathon-post.expired {
     opacity: 0.7;
-    background-color: #f9f9f9;
+    background-color: #f4f4f4;
 }
 
 .expired-note {
@@ -113,18 +137,32 @@ body {
     font-style: italic;
 }
 
+.button-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.join-hackathon-btn,
+.calendar-btn,
+.edit-hackathon-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
 .join-hackathon-btn {
     background-color: #0073b1;
     color: white;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-top: 10px;
 }
 
 .join-hackathon-btn:hover {
     background-color: #005f91;
+    transform: translateY(-2px);
 }
 
 .join-hackathon-btn.joined {
@@ -135,19 +173,24 @@ body {
 .calendar-btn {
     background-color: #4CAF50;
     color: white;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-left: 10px;
-    margin-top: 10px;
 }
 
 .calendar-btn:hover {
     background-color: #45a049;
+    transform: translateY(-2px);
 }
 
-.form-popup {
+.edit-hackathon-btn {
+    background-color: #ff9800;
+    color: white;
+}
+
+.edit-hackathon-btn:hover {
+    background-color: #e68a00;
+    transform: translateY(-2px);
+}
+
+#hackathon-form-popup {
     display: none;
     position: fixed;
     left: 50%;
@@ -155,10 +198,94 @@ body {
     transform: translate(-50%, -50%);
     background-color: white;
     border: 2px solid #0073b1;
-    z-index: 9;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-    width: 80%;
+    z-index: 100;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     max-width: 500px;
+    width: 90%;
+}
+
+#hackathon-form-popup h2 {
+    text-align: center;
+    color: #0073b1;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group input,
+.input-group textarea,
+.input-group select {
+    width: 100%;
+    padding: 12px;
+    padding-top: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-group input:focus,
+.input-group textarea:focus,
+.input-group select:focus {
+    border-color: #0073b1;
+    box-shadow: 0 0 4px rgba(0, 115, 177, 0.5);
+    background-color: white;
+    outline: none;
+}
+
+.input-group label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 0.9rem;
+    color: #aaa;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label,
+.input-group textarea:focus + label,
+.input-group textarea:not(:placeholder-shown) + label {
+    top: -8px;
+    left: 12px;
+    font-size: 0.8rem;
+    color: #0073b1;
+    background-color: white;
+    padding: 0 4px;
+}
+
+button {
+    padding: 12px 20px;
+    background-color: #0073b1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #005f8a;
+    transform: translateY(-2px);
+}
+
+.cancel-btn {
+    background-color: red;
+}
+
+.cancel-btn:hover {
+    background-color: darkred;
 }

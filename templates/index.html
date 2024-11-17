@@ -33,8 +33,14 @@
         <div id="loginForm" class="form-popup">
             <h2>Login</h2>
             <form action="/" method="POST">
-                <input type="text" name="login_username" placeholder="Username" required autocomplete="off"><br>
-                <input type="password" name="login_password" placeholder="Password" required><br>
+                <div class="input-group">
+                    <input type="text" name="login_username" placeholder=" " required>
+                    <label for="login_username">Username</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" name="login_password" placeholder=" " required>
+                    <label for="login_password">Password</label>
+                </div>
                 <button type="submit" name="login">Login</button>
                 <button type="button" class="close-btn" onclick="closeForm('loginForm')">Close</button>
             </form>
@@ -53,16 +59,26 @@
         <div id="signupForm" class="form-popup">
             <h2>Signup</h2>
             <form action="/" method="POST">
-                <input type="text" name="username" placeholder="Username" required autocomplete="=off"><br>
-                <input type="email" name="email" placeholder="Email" required><br>
-                <input type="password" name="password" placeholder="Password" required><br>
-
-                <label for="role">Role:</label>
-                <select name="role" required>
-                    <option value="user">User</option>
-                    <option value="organiser">Organiser</option>
-                </select>
-
+                <div class="input-group">
+                    <input type="text" name="username" placeholder=" " required>
+                    <label for="username">Username</label>
+                </div>
+                <div class="input-group">
+                    <input type="email" name="email" placeholder=" " required>
+                    <label for="email">Email</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" name="password" placeholder=" " required>
+                    <label for="password">Password</label>
+                </div>
+                <div class="input-group">
+                    <select name="role" required>
+                        <option value="" disabled selected>Select Role</option>
+                        <option value="user">User</option>
+                        <option value="organiser">Organiser</option>
+                    </select>
+                    <label for="role">Role</label>
+                </div>
                 <button type="submit" name="signup">Signup</button>
                 <button type="button" class="close-btn" onclick="closeForm('signupForm')">Close</button>
             </form>
@@ -78,13 +94,13 @@
     
 
         <main class="main-content">
-            <button class="create-post-btn" onclick="showForm('postFormPopup')">
+            <button class="create-post-btn fixed" onclick="showForm('postFormPopup')">
                 <i class="fas fa-plus-circle"></i> Create Job Post
             </button>
             <h2>Welcome, {{ session['username'] }}!</h2>
             <div class="job-feed">
                 {% if personalised_jobs %}
-                    <h2>Personalised Job Matches</h2>
+                    <h2>Personalised Job Matches:</h2>
                     <div id="personalised-jobs">
                         {% for job in personalised_jobs %}
                             <div class="job-post">
@@ -98,7 +114,7 @@
                     </div>
                 {% endif %}
                 
-                <h2>All Job Posts</h2>
+                <h2>All Job Posts:</h2>
                 <div id="general-jobs">
                     {% for job in general_jobs %}
                         <div class="job-post">
@@ -114,11 +130,20 @@
         </main>
 
         <div id="postFormPopup" class="form-popup">
-            <h2>Create Job Posts</h2>
+            <h2>Create Job Post</h2>
             <form id="postForm" action="/create_post" method="POST">
-                <input type="text" name="title" placeholder="Job Title" required><br>
-                <textarea name="description" placeholder="Description" required></textarea><br>
-                <input type="url" name="url" placeholder="Application Link (URL)" required><br>
+                <div class="input-group">
+                    <input type="text" name="title" placeholder=" " required>
+                    <label for="title">Job Title</label>
+                </div>
+                <div class="input-group">
+                    <textarea name="description" placeholder=" " rows="4" required></textarea>
+                    <label for="description">Description</label>
+                </div>
+                <div class="input-group">
+                    <input type="url" name="url" placeholder=" " required>
+                    <label for="url">Application Link (URL)</label>
+                </div>
                 <button type="submit">Post</button>
                 <button type="button" class="close-btn" onclick="closeForm('postFormPopup')">Close</button>
             </form>

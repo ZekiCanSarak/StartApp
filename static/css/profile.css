@@ -5,11 +5,14 @@
 }
 
 
-
-body {
-    font-family: Arial, Helvetica, sans-serif;
+.montserrat body> {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
     background-color: #f4f4f4;
-}
+  }
+
 
 .navbar{
     background-color: #0073b1;

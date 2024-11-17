@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homepage</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
 </head>
 <body>
     <header>
         <div class="navbar">
-            <h1>StartApp</h1>
+            <h1><i class="fas fa-rocket"></i> StartApp</h1>
             <nav>
                 <ul>
                     {%if not logged_in %}
@@ -66,15 +70,17 @@
         {% else %}
         <aside class="sidebar">
             <ul>
-                <li><a href="/hack">Hackathons</a></li>
-                    <li><a href="/profile">Profile</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
             </ul>
         </aside>
 
     
 
         <main class="main-content">
-            <button class="create-post-btn" onclick="showForm('postFormPopup')">Create Job Post</button>
+            <button class="create-post-btn" onclick="showForm('postFormPopup')">
+                <i class="fas fa-plus-circle"></i> Create Job Post
+            </button>
             <h2>Welcome, {{ session['username'] }}!</h2>
             <div class="job-feed">
                 {% if personalised_jobs %}
@@ -82,9 +88,11 @@
                     <div id="personalised-jobs">
                         {% for job in personalised_jobs %}
                             <div class="job-post">
-                                <h3>{{ job.title }}</h3>
+                                <h3><i class="fas fa-briefcase"></i> {{ job.title }}</h3>
                                 <p>{{ job.description }}</p>
-                                <a href="{{ job.url }}" target="_blank">Apply Here</a>
+                                <a href="{{ job.url }}" target="_blank">
+                                    <i class="fas fa-external-link-alt"></i> Apply Here
+                                </a>
                             </div>
                         {% endfor %}
                     </div>
@@ -94,9 +102,11 @@
                 <div id="general-jobs">
                     {% for job in general_jobs %}
                         <div class="job-post">
-                            <h3>{{ job.title }}</h3>
+                            <h3><i class="fas fa-briefcase"></i> {{ job.title }}</h3>
                             <p>{{ job.description }}</p>
-                            <a href="{{ job.url }}" target="_blank">Apply Here</a>
+                            <a href="{{ job.url }}" target="_blank">
+                                <i class="fas fa-external-link-alt"></i> Apply Here
+                            </a>
                         </div>
                     {% endfor %}
                 </div>

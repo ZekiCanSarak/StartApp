@@ -47,17 +47,29 @@ function addHackathonToFeed(hackathon) {
     let hackathonElement = document.querySelector(`.hackathon-post[data-id="${hackathonIdStr}"]`);
 
     if (hackathonElement) {
+        // Update existing hackathon post
         hackathonElement.innerHTML = `
             <h3>${hackathon.title}</h3>
             <p class="description">${hackathon.description}</p>
             <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
             <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
             <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
-            ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
-            ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
-            ${hackathon.created_by === hackathon.current_user ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
+            ${hackathon.joined 
+                ? `<button class="join-hackathon-btn joined" disabled>
+                       <i class="fas fa-user-check"></i> Joined
+                   </button>`
+                : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">
+                       <i class="fas fa-user-plus"></i> Join
+                   </button>`
+            }
+            ${hackathon.created_by === hackathon.current_user 
+                ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">
+                       <i class="fas fa-edit"></i> Edit
+                   </button>`
+                : ''}
         `;
     } else {
+        // Create new hackathon post
         hackathonElement = document.createElement('div');
         hackathonElement.classList.add('hackathon-post');
         hackathonElement.setAttribute('data-id', hackathonIdStr);
@@ -68,9 +80,19 @@ function addHackathonToFeed(hackathon) {
             <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
             <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
             <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
-            ${hackathon.joined ? '<button class="join-hackathon-btn joined" disabled>Joined</button>' : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">Join</button>`}
-            ${hackathon.joined ? `<button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">Add to Calendar</button>` : ''}
-            ${hackathon.created_by === hackathon.current_user ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">Edit</button>` : ''}
+            ${hackathon.joined 
+                ? `<button class="join-hackathon-btn joined" disabled>
+                       <i class="fas fa-user-check"></i> Joined
+                   </button>`
+                : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">
+                       <i class="fas fa-user-plus"></i> Join
+                   </button>`
+            }
+            ${hackathon.created_by === hackathon.current_user 
+                ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">
+                       <i class="fas fa-edit"></i> Edit
+                   </button>`
+                : ''}
         `;
 
         const targetSection = hackathon.category === 'matching' ? '#personalised-hackathons'

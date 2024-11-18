@@ -53,10 +53,13 @@ body {
     height: 100vh;
     position: fixed;
     left: 0;
+    top: 60px; 
+    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar ul {
     list-style: none;
+    padding: 0;
 }
 
 .sidebar ul li {
@@ -67,6 +70,16 @@ body {
     color: #333;
     text-decoration: none;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar ul li a:hover {
+    background-color: #d6d6d6;
 }
 
 .container {

@@ -62,7 +62,6 @@ def home():
 
     if 'username' in session:
         username = session['username']
-        
         user_profile = query_db("SELECT preferred_jobs FROM user_profiles WHERE username = ?", [username], one=True)
         preferred_jobs = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
@@ -94,7 +93,9 @@ def hack():
         return redirect(url_for('home'))
 
     username = session['username']
-    today = datetime.now().date()
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    active_hackathons = query_db("""SELECT id, title FROM hackathons WHERE date >= ? ORDER BY date ASC """, [today])
 
     user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
     user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
@@ -153,7 +154,8 @@ def hack():
         'hack.html', 
         matching_hackathons=matching_hackathons, 
         other_hackathons=other_hackathons, 
-        expired_hackathons=expired_hackathons
+        expired_hackathons=expired_hackathons,
+        active_hackathons=active_hackathons
     )
 
 @app.route('/post_hackathon', methods=['POST'])
@@ -428,6 +430,48 @@ def add_to_google_calendar(hackathon_id):
         return redirect(google_calendar_url)
     else:
         return "Hackathon not found", 404
+    
+
+
+@app.route('/hackathon/<int:hackathon_id>/updates')
+def hackathon_page(hackathon_id):
+    hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+    updates = query_db("SELECT * FROM hackathon_updates WHERE hackathon_id = ? ORDER BY created_at DESC", [hackathon_id])
+    if not hackathon:
+        return "Hackathon not found", 404
+    
+    return render_template('updates.html', hackathon=hackathon, updates=updates, is_creator=(hackathon['created_by'] == session.get('username')))
+
+
+@app.route('/add_update', methods=['POST'])
+def add_update():
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'Please log in to add an update.'}), 401
+
+    hackathon_id = request.form['hackathon_id']
+    content = request.form['content']
+    username = session['username']
+    created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
+    hackathon = query_db("SELECT created_by FROM hackathons WHERE id = ?", [hackathon_id], one=True)
+    if not hackathon:
+        return jsonify({'success': False, 'message': 'Hackathon not found.'}), 404
+    if hackathon['created_by'] != username:
+        return jsonify({'success': False, 'message': 'You are not authorised to post updates for this hackathon.'}), 403
+
+    try:
+        insert_db("INSERT INTO hackathon_updates (hackathon_id, content, created_at) VALUES (?, ?, ?)", 
+                  (hackathon_id, content, created_at))
+        return jsonify({'success': True, 'update': {'content': content, 'created_at': created_at}})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/get_updates/<int:hackathon_id>', methods=['GET'])
+def get_updates(hackathon_id):
+    updates = query_db("SELECT * FROM hackathon_updates WHERE hackathon_id = ? ORDER BY created_at DESC", [hackathon_id])
+    return jsonify([dict(update) for update in updates])
 
 @app.route('/logout')
 def logout():

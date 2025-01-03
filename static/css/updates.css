@@ -1,0 +1,138 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    background-color: #0073b1;
+    color: white;
+    border-bottom: 4px solid #005f8a;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+header p {
+    font-size: 1.2rem;
+    margin: 5px 0;
+}
+
+/* Updates Section */
+section {
+    margin: 20px auto;
+    width: 90%;
+    max-width: 800px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+section h2 {
+    text-align: center;
+    color: #0073b1;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+/* Updates List */
+#updates-container {
+    margin-bottom: 20px;
+}
+
+#updates-list {
+    list-style: none;
+    padding: 0;
+}
+
+#updates-list li {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#updates-list li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+#updates-list li strong {
+    color: #0073b1;
+    display: block;
+    margin-bottom: 5px;
+}
+
+form#add-update-form {
+    margin-top: 30px;
+    padding: 20px;
+    border: 2px solid #0073b1;
+    border-radius: 12px;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+form#add-update-form textarea {
+    width: 100%;
+    height: 120px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    resize: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+form#add-update-form textarea:focus {
+    border-color: #0073b1;
+    box-shadow: 0 0 4px rgba(0, 115, 177, 0.5);
+    outline: none;
+}
+
+form#add-update-form button {
+    padding: 12px 20px;
+    background-color: #0073b1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%;
+}
+
+form#add-update-form button:hover {
+    background-color: #005f8a;
+    transform: translateY(-2px);
+}
+
+form#add-update-form button:active {
+    background-color: #004a71;
+    transform: translateY(0);
+}
+
+#updates-container.loading {
+    background-color: #f9f9f9;
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+}

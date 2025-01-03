@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ hackathon.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/updates.css') }}">
+</head>
+<body>
+    <header>
+        <h1>{{ hackathon.title }}</h1>
+        <p><strong>Date:</strong> {{ hackathon.date }}</p>
+        <p><strong>Location:</strong> {{ hackathon.location }}</p>
+        <p>{{ hackathon.description }}</p>
+    </header>
+
+    <section>
+        <h2>Live Updates</h2>
+        <div id="updates-container">
+            <ul id="updates-list">
+                {% for update in updates %}
+                <li><strong>{{ update.created_at }}</strong>: {{ update.content }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        {% if session.get('role') == 'organiser' and hackathon.created_by == session.get('username') %}
+            <form id="add-update-form">
+                <textarea name="content" id="update-content" placeholder="Post an update..." required></textarea>
+                <input type="hidden" name="hackathon_id" id="hackathon-id" value="{{ hackathon.id }}">
+                <button type="submit">Post Update</button>
+            </form>
+        {% endif %}
+    </section>
+
+    <script src="{{ url_for('static', filename='js/updates.js') }}"></script>
+</body>
+</html>

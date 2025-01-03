@@ -27,6 +27,13 @@
         <ul>
             <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
             <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+            {% if active_hackathons %}
+                {% for hackathon in active_hackathons %}
+                    <li><a href="/hackathon/{{ hackathon.id }}/updates"><i class="fas fa-bell"></i> {{ hackathon.title }}</a></li>
+                {% endfor %}
+            {% else %}
+                <li>No active hackathons</li>
+            {% endif %}
         </ul>
     </aside>
 

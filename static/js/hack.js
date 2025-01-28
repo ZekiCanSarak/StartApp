@@ -24,22 +24,30 @@ document.getElementById("hackathon-form").addEventListener("submit", function (e
         formData.append('hackathon_id', hackathonId);
     }
 
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/post_hackathon", true);
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            if (response.success) {
-                addHackathonToFeed(response.hackathon);
+    fetch("/post_hackathon", {
+        method: "POST",
+        body: formData,
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("Hackathon created/updated:", data.hackathon);
+
+                // Add the hackathon to the feed
+                addHackathonToFeed(data.hackathon);
+
+                // Add the hackathon to the sidebar
+                addHackathonToSidebar(data.hackathon);
+
+                // Close the form
                 closeForm();
             } else {
-                alert(response.message);
+                alert("Error saving hackathon: " + data.message);
             }
-        } else if (xhr.readyState === 4) {
-            alert("An error occurred while saving the hackathon.");
-        }
-    };
-    xhr.send(formData);
+        })
+        .catch(error => {
+            console.error("Error submitting hackathon:", error);
+        });
 });
 
 function addHackathonToFeed(hackathon) {
@@ -213,4 +221,25 @@ function submitHackathonEdit() {
         }
     })
     .catch(error => console.error('Error editing hackathon:', error));
+}
+
+function addHackathonToSidebar(hackathon) {
+    const sidebar = document.getElementById("hackathon-sidebar");
+    if (!sidebar) {
+        console.error("Sidebar not found!");
+        return;
+    }
+
+    // Check for duplicates
+    if (document.querySelector(`#hackathon-sidebar a[href='/hackathon/${hackathon.id}/updates']`)) {
+        console.warn("Hackathon already exists in sidebar.");
+        return;
+    }
+
+    // Create new sidebar item
+    const newHackathon = document.createElement("li");
+    newHackathon.innerHTML = `<a href="/hackathon/${hackathon.id}/updates"><i class="fas fa-bell"></i> ${hackathon.title}</a>`;
+    sidebar.appendChild(newHackathon);
+
+    console.log(`Hackathon "${hackathon.title}" added to the sidebar.`);
 }

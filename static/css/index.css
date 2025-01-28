@@ -20,7 +20,11 @@ body {
     background-color: #0073b1;
     color: white;
     padding: 1rem 2rem;
-
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%; 
+    z-index: 1000; 
 }
 
 .navbar h1{
@@ -297,8 +301,10 @@ button:hover {
     height: 100vh;
     position: fixed;
     left: 0;
-    top: 61px; 
+    top: 0; 
+    z-index: 999;
     box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+    padding-top: 5rem;
 }
 
 .sidebar ul {
@@ -329,7 +335,8 @@ button:hover {
 .main-content{
     margin-left: 25%;
     width: 75%;
-    padding: 2rem;
+    padding: 1rem;
+    margin-top: 3rem;
     
 }
 

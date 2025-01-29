@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ hackathon.title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/updates.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <header>
@@ -12,6 +14,11 @@
         <p><strong>Date:</strong> {{ hackathon.date }}</p>
         <p><strong>Location:</strong> {{ hackathon.location }}</p>
         <p>{{ hackathon.description }}</p>
+
+        <button onclick="goBack()" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Hackathons
+        </button>
+
     </header>
 
     <section>

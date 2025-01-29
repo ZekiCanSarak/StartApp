@@ -63,3 +63,7 @@ function fetchUpdates(hackathonId) {
 
 // Calling fetchUpdates every 10 seconds
 setInterval(() => fetchUpdates(hackathonId), 10000);
+
+function goBack() {
+    window.location.href = "/hack"; // Redirects to the Hackathons page
+}

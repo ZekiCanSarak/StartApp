@@ -48,6 +48,11 @@
                     {% if matching_hackathons %}
                         {% for hackathon in matching_hackathons %}
                         <div class="hackathon-post" data-id="{{ hackathon.id }}">
+                            {% if hackathon.image_path %}
+                            <div class="hackathon-image">
+                                <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                            </div>
+                            {% endif %}
                             <h3>{{ hackathon.title }}</h3>
                             <p>{{ hackathon.description }}</p>
                             <p><strong>Date:</strong> {{ hackathon.date }}</p>
@@ -83,6 +88,11 @@
                 <div id="other-hackathons">
                     {% for hackathon in other_hackathons %}
                     <div class="hackathon-post" data-id="{{ hackathon.id }}">
+                        {% if hackathon.image_path %}
+                        <div class="hackathon-image">
+                            <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                        </div>
+                        {% endif %}
                         <h3>{{ hackathon.title }}</h3>
                         <p>{{ hackathon.description }}</p>
                         <p><strong>Date:</strong> {{ hackathon.date }}</p>
@@ -115,12 +125,25 @@
                 <div id="expired-hackathons">
                     {% for hackathon in expired_hackathons %}
                     <div class="hackathon-post expired">
+                        {% if hackathon.image_path %}
+                        <div class="hackathon-image">
+                            <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                        </div>
+                        {% endif %}
                         <h3>{{ hackathon.title }}</h3>
                         <p>{{ hackathon.description }}</p>
                         <p><strong>Date:</strong> {{ hackathon.date }}</p>
                         <p><strong>Location:</strong> {{ hackathon.location }}</p>
                         <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                        <p class="expired-note"><i class="fas fa-exclamation-circle"></i> This hackathon has expired.</p>
+                        <p class="expired-note">
+                            <i class="fas fa-exclamation-circle"></i> 
+                            This hackathon has expired
+                            {% if hackathon.days_expired == 1 %}
+                                (1 day ago)
+                            {% else %}
+                                ({{ hackathon.days_expired }} days ago)
+                            {% endif %}
+                        </p>
                         <div class="button-group">
                             {% if session.get('username') == hackathon.created_by %}
                                 <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
@@ -138,8 +161,9 @@
 
     <div id="hackathon-form-popup" class="form-popup">
         <h2>Create/Edit Hackathon</h2>
-        <form id="hackathon-form" action="/post_hackathon" method="POST">
+        <form id="hackathon-form" action="/post_hackathon" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="hackathon_id" id="hackathon_id">
+            <input type="hidden" name="current_image_path" id="current_image_path">
     
             <div class="input-group">
                 <input type="text" id="title" name="title" placeholder=" " required>
@@ -165,11 +189,15 @@
                 <input type="number" id="max_participants" name="max_participants" placeholder=" " min="1" required>
                 <label for="max_participants">Max Participants</label>
             </div>
+
+            <div class="input-group">
+                <input type="file" id="image" name="image" accept="image/*">
+                <label for="image">Hackathon Image (Optional)</label>
+                <div id="current-image-preview"></div>
+            </div>
     
             <button type="submit" id="post-button">Post</button>
-    
             <button type="submit" id="save-button" style="display: none;">Save Changes</button>
-    
             <button type="button" class="cancel-btn" onclick="closeForm()">Cancel</button>
         </form>
     </div>

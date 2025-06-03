@@ -3,12 +3,23 @@ from passlib.hash import sha256_crypt
 import sqlite3
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
-
-
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['DATABASE'] = 'database.sqlite'
 app.secret_key = '123456789'
+
+# Configure upload folder
+UPLOAD_FOLDER = 'static/hackathon_images'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Create upload folder if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db():
      db = sqlite3.connect('database.sqlite')
@@ -27,6 +38,56 @@ def insert_db(query, args=()):
      db.commit()
      db.close()
 
+def cleanup_old_hackathons(days_threshold=30):
+    """Delete hackathons that have been expired for more than the specified number of days"""
+    try:
+        # Calculate the cutoff date
+        cutoff_date = (datetime.now() - timedelta(days=days_threshold)).strftime('%Y-%m-%d')
+        
+        # First, get the image paths of hackathons to be deleted
+        old_hackathons = query_db(
+            "SELECT image_path FROM hackathons WHERE date < ?", 
+            [cutoff_date]
+        )
+
+        # Delete the associated images
+        for hackathon in old_hackathons:
+            if hackathon['image_path']:
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], 
+                                        os.path.basename(hackathon['image_path']))
+                if os.path.exists(image_path):
+                    os.remove(image_path)
+
+        # Delete the old hackathons and their related data
+        db = get_db()
+        cursor = db.cursor()
+        
+        # Delete from participants table first (foreign key relationships)
+        cursor.execute("""
+            DELETE FROM participants 
+            WHERE hackathon_id IN (
+                SELECT id FROM hackathons 
+                WHERE date < ?
+            )
+        """, [cutoff_date])
+
+        # Delete from hackathon_updates
+        cursor.execute("""
+            DELETE FROM hackathon_updates 
+            WHERE hackathon_id IN (
+                SELECT id FROM hackathons 
+                WHERE date < ?
+            )
+        """, [cutoff_date])
+
+        # Finally delete the hackathons
+        cursor.execute("DELETE FROM hackathons WHERE date < ?", [cutoff_date])
+        
+        db.commit()
+        return True
+    except Exception as e:
+        print(f"Error cleaning up old hackathons: {str(e)}")
+        return False
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -94,15 +155,24 @@ def hack():
 
     username = session['username']
     today = datetime.now().strftime('%Y-%m-%d')
+    today_date = datetime.now().date()
 
-    active_hackathons = query_db("""SELECT id, title FROM hackathons WHERE date >= ? ORDER BY date ASC """, [today])
+    # Clean up old hackathons (older than 30 days)
+    cleanup_old_hackathons(30)
+
+    active_hackathons = query_db("""
+        SELECT h.id, h.title, h.image_path 
+        FROM hackathons h 
+        WHERE h.date >= ? 
+        ORDER BY h.date ASC
+    """, [today])
 
     user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
     user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
 
     hackathon_base_query = """
     SELECT h.id, h.title, h.description, h.date, h.location, h.max_participants,
-           h.created_by,  -- Include the creator field
+           h.created_by, h.image_path,
            COUNT(p.id) AS current_participants,
            CASE WHEN p2.username IS NOT NULL THEN 1 ELSE 0 END AS joined
     FROM hackathons h
@@ -111,7 +181,6 @@ def hack():
     WHERE h.date >= ?
 """
     
-    # Adding skill matching for personalised hackathons
     if user_skills:
         skill_conditions = " OR ".join([
             "(LOWER(h.title) LIKE LOWER(?) OR LOWER(h.description) LIKE LOWER(?))"
@@ -140,8 +209,9 @@ def hack():
 
     expired_hackathons = query_db("""
         SELECT h.id, h.title, h.description, h.date, h.location, h.max_participants,
+               h.created_by, h.image_path,
                COUNT(p.id) AS current_participants,
-               CASE WHEN p2.username IS NOT NULL THEN 1 ELSE 0 END AS joined  -- Check join status for expired hackathons
+               CASE WHEN p2.username IS NOT NULL THEN 1 ELSE 0 END AS joined
         FROM hackathons h
         LEFT JOIN participants p ON h.id = p.hackathon_id
         LEFT JOIN participants p2 ON h.id = p2.hackathon_id AND p2.username = ?
@@ -149,6 +219,13 @@ def hack():
         GROUP BY h.id
         ORDER BY h.date DESC
     """, [username, today])
+
+    # Convert Row objects to dictionaries and calculate days since expiration
+    expired_hackathons = [dict(hackathon) for hackathon in expired_hackathons]
+    for hackathon in expired_hackathons:
+        hackathon_date = datetime.strptime(hackathon['date'], '%Y-%m-%d').date()
+        days_expired = (today_date - hackathon_date).days
+        hackathon['days_expired'] = days_expired
 
     return render_template(
         'hack.html', 
@@ -165,8 +242,24 @@ def post_hackathon():
     date = request.form['date']
     location = request.form['location']
     max_participants = request.form.get('max_participants', type=int)
-    hackathon_id = request.form.get('hackathon_id')  
-    username = session.get('username')  
+    hackathon_id = request.form.get('hackathon_id')
+    username = session.get('username')
+    current_image_path = request.form.get('current_image_path')
+    
+    # Handle image upload
+    image_path = None
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Add timestamp to filename to make it unique
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+            filename = timestamp + filename
+            # Save file and store relative path
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_path = f'hackathon_images/{filename}'  # Store relative path
+    elif current_image_path:  # Keep existing image if no new one is uploaded
+        image_path = current_image_path.replace('static/', '') if current_image_path.startswith('static/') else current_image_path
 
     try:
         db = get_db()
@@ -175,17 +268,27 @@ def post_hackathon():
         if hackathon_id:
             # Check if the user owns this hackathon
             hackathon = query_db(
-                "SELECT created_by FROM hackathons WHERE id = ?", [hackathon_id], one=True
+                "SELECT created_by, image_path FROM hackathons WHERE id = ?", [hackathon_id], one=True
             )
             if not hackathon or hackathon['created_by'] != username:
                 return jsonify({'success': False, 'message': 'You do not have permission to edit this hackathon.'})
 
+            # If a new image is uploaded or image is removed, delete the old one if it exists
+            if ((image_path and image_path != hackathon['image_path']) or not image_path) and hackathon['image_path']:
+                old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(hackathon['image_path']))
+                if os.path.exists(old_image_path):
+                    os.remove(old_image_path)
+
+            # If no new image is uploaded and no current_image_path is provided, keep the existing image
+            if not image_path and hackathon['image_path']:
+                image_path = hackathon['image_path']
+
             # Editing existing hackathon
             cursor.execute("""
                 UPDATE hackathons
-                SET title = ?, description = ?, date = ?, location = ?, max_participants = ?
+                SET title = ?, description = ?, date = ?, location = ?, max_participants = ?, image_path = ?
                 WHERE id = ?
-            """, (title, description, date, location, max_participants, hackathon_id))
+            """, (title, description, date, location, max_participants, image_path, hackathon_id))
             
             current_participants = query_db(
                 "SELECT COUNT(*) FROM participants WHERE hackathon_id = ?", [hackathon_id], one=True
@@ -197,9 +300,9 @@ def post_hackathon():
         else:
             # Creating a new hackathon
             cursor.execute("""
-                INSERT INTO hackathons (title, description, date, location, max_participants, created_by)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (title, description, date, location, max_participants, username))
+                INSERT INTO hackathons (title, description, date, location, max_participants, created_by, image_path)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (title, description, date, location, max_participants, username, image_path))
             hackathon_id = cursor.lastrowid
             current_participants = 0
             joined = False
@@ -214,7 +317,6 @@ def post_hackathon():
 
         if any(skill.strip().lower() in (title + description).lower() for skill in user_skills):
             category = "matching"
-
 
         updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
 
@@ -232,7 +334,8 @@ def post_hackathon():
                 'joined': joined,
                 'role': session.get('role', 'user'),
                 'created_by': updated_hackathon['created_by'],
-                'current_user': session.get('username')  
+                'current_user': session.get('username'),
+                'image_path': updated_hackathon['image_path']
             }
         })
     except Exception as e:

@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import os
 from werkzeug.utils import secure_filename
 
+
 app = Flask(__name__)
 app.config['DATABASE'] = 'database.sqlite'
 app.secret_key = '123456789'
@@ -144,7 +145,8 @@ def home():
         return render_template('index.html', logged_in=True, personalised_jobs=personalised_jobs, general_jobs=general_jobs)
 
     all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
-    return render_template('index.html', logged_in=False, general_jobs=all_jobs)
+    guest_hackathons = query_db("SELECT * FROM hackathons ORDER BY id DESC LIMIT 3")  # Adjust LIMIT as needed
+    return render_template('index.html', logged_in=False, general_jobs=all_jobs, guest_hackathons=guest_hackathons)
 
 
 @app.route('/hack', methods=['GET'])

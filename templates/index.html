@@ -31,6 +31,22 @@
     <div class="container">
 
         {%if not logged_in %}
+        <section class="guest-hackathons">
+            <h2>Explore Hackathons</h2>
+            <div class="hackathon-preview">
+                {% for hackathon in guest_hackathons %}
+                <div class="hackathon-post">
+                    <h3><i class="fas fa-laptop-code"></i> {{ hackathon.title }}</h3>
+                    <p>{{ hackathon.description }}</p>
+                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
+                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
+                    <p class="signup-prompt" style="cursor: pointer;">
+                        <i class="fas fa-user-plus"></i> <strong>Signup to join!</strong>
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
         <div id="loginForm" class="form-popup">
             <h2>Login</h2>
             <form action="/" method="POST">

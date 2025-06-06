@@ -557,3 +557,66 @@ button:hover {
 .job-post + .job-post {
     margin-top: 20px;
 }
+
+.guest-hackathons {
+    margin: 10rem auto 2rem auto;
+    padding: 2.5rem;
+    max-width: 1400px;
+    background-color: #f8f8f8;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.guest-hackathons h2 {
+    text-align: center;
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.hackathon-preview {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    padding: 0 2rem 1rem 2rem;
+}
+
+.hackathon-post {
+    background-color: white;
+    padding: 2.2rem 2.7rem;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+    width: 360px;
+    flex: 0 0 auto;
+}
+
+.hackathon-post:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hackathon-post h3 {
+    font-size: 1.3rem;
+    color: #0073b1;
+    margin-bottom: 0.5rem;
+}
+
+.hackathon-post p {
+    margin: 0.3rem 0;
+    color: #444;
+}
+
+.signup-prompt {
+    color: #0073b1;
+    font-weight: bold;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.signup-prompt i {
+    margin-right: 0.5rem;
+}

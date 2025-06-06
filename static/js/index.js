@@ -11,18 +11,6 @@ function toggleForm(formId) {
     }
 }
 
-document.addEventListener("click", function (event) {
-    const loginForm = document.getElementById("loginForm");
-    const signupForm = document.getElementById("signupForm");
-
-    if (loginForm.style.display === "block" || signupForm.style.display === "block") {
-        if (!loginForm.contains(event.target) && !signupForm.contains(event.target) && !event.target.closest("button")) {
-            closeForm('loginForm');
-            closeForm('signupForm');
-        }
-    }
-});
-
 function closeForm(formId) {
     const form = document.getElementById(formId);
     if (form) {
@@ -96,3 +84,33 @@ function addJobToFeed(job) {
         feed.prepend(jobElement);
     }
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const signupLinks = document.querySelectorAll('.signup-prompt');
+    const signupForm = document.getElementById('signupForm');
+
+    signupLinks.forEach(link => {
+        link.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (signupForm) {
+                signupForm.style.display = 'block';
+            }
+        });
+    });
+
+    document.addEventListener("click", function (event) {
+        const loginForm = document.getElementById("loginForm");
+
+        const isInsideForm = (
+            (loginForm && loginForm.contains(event.target)) ||
+            (signupForm && signupForm.contains(event.target)) ||
+            event.target.closest("button") ||
+            event.target.closest(".signup-prompt")
+        );
+
+        if (!isInsideForm) {
+            closeForm('loginForm');
+            closeForm('signupForm');
+        }
+    });
+});

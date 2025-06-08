@@ -64,7 +64,7 @@
                                         <i class="fas fa-comment"></i> Message
                                         <span class="message-notification" data-username="{{ connection.username }}"></span>
                                     </a>
-                                {% elif connection.status == 'pending' %}
+                                {% elif connection.request_type == 'received' and connection.status == 'pending' %}
                                     <div class="action-buttons">
                                         <button class="accept-btn" data-username="{{ connection.username }}">
                                             <i class="fas fa-check"></i> Accept
@@ -73,6 +73,8 @@
                                             <i class="fas fa-times"></i> Reject
                                         </button>
                                     </div>
+                                {% elif connection.request_type == 'sent' and connection.status == 'pending' %}
+                                    <p class="pending-status">Request Sent - Pending Response</p>
                                 {% endif %}
                             </div>
                         </div>

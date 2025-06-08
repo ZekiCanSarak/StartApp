@@ -610,12 +610,20 @@ def connections():
         return redirect(url_for('home'))
     
     connections = query_db("""
-        SELECT u.username, u.email, c.status, c.created_at
+        SELECT 
+            u.username, 
+            u.email, 
+            c.status, 
+            c.created_at,
+            CASE 
+                WHEN c.user1 = ? THEN 'sent'
+                WHEN c.user2 = ? THEN 'received'
+            END as request_type
         FROM connections c
         JOIN users u ON (c.user1 = u.username OR c.user2 = u.username)
         WHERE (c.user1 = ? OR c.user2 = ?) AND u.username != ?
         ORDER BY c.created_at DESC
-    """, [session['username'], session['username'], session['username']])
+    """, [session['username'], session['username'], session['username'], session['username'], session['username']])
     
     return render_template('connections.html', connections=connections)
 

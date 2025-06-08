@@ -584,5 +584,240 @@ def logout():
      flash("Logged out successfully", "success")
      return redirect(url_for('home'))
 
+# User Search and Messaging Routes
+@app.route('/search_users', methods=['GET'])
+def search_users():
+    if 'username' not in session:
+        flash("Please log in to search users.", "error")
+        return redirect(url_for('home'))
+    
+    search_query = request.args.get('q', '')
+    if search_query:
+        users = query_db("""
+            SELECT username, email FROM users 
+            WHERE username != ? AND username LIKE ? 
+            ORDER BY username
+        """, [session['username'], f'%{search_query}%'])
+    else:
+        users = []
+    
+    return render_template('search_users.html', users=users, search_query=search_query)
+
+@app.route('/connections', methods=['GET'])
+def connections():
+    if 'username' not in session:
+        flash("Please log in to view connections.", "error")
+        return redirect(url_for('home'))
+    
+    connections = query_db("""
+        SELECT u.username, u.email, c.status, c.created_at
+        FROM connections c
+        JOIN users u ON (c.user1 = u.username OR c.user2 = u.username)
+        WHERE (c.user1 = ? OR c.user2 = ?) AND u.username != ?
+        ORDER BY c.created_at DESC
+    """, [session['username'], session['username'], session['username']])
+    
+    return render_template('connections.html', connections=connections)
+
+@app.route('/connect', methods=['POST'])
+def connect():
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    target_user = request.form.get('username')
+    if not target_user:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    try:
+        # Check if connection already exists
+        existing = query_db("""
+            SELECT * FROM connections 
+            WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)
+        """, [session['username'], target_user, target_user, session['username']], one=True)
+        
+        if existing:
+            return jsonify({'error': 'Connection already exists'}), 400
+        
+        # Create new connection
+        insert_db("""
+            INSERT INTO connections (user1, user2, status, created_at) 
+            VALUES (?, ?, 'pending', datetime('now'))
+        """, [session['username'], target_user])
+        
+        return jsonify({'message': 'Connection request sent'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/messages/<username>', methods=['GET'])
+def messages(username):
+    if 'username' not in session:
+        flash("Please log in to view messages.", "error")
+        return redirect(url_for('home'))
+    
+    # Check if there's a connection between users
+    connection = query_db("""
+        SELECT * FROM connections 
+        WHERE ((user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?))
+        AND status = 'accepted'
+    """, [session['username'], username, username, session['username']], one=True)
+    
+    if not connection:
+        flash("You need to be connected with this user to send messages.", "error")
+        return redirect(url_for('connections'))
+    
+    messages = query_db("""
+        SELECT * FROM messages 
+        WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)
+        ORDER BY sent_at ASC
+    """, [session['username'], username, username, session['username']])
+    
+    # Mark messages from this user as read
+    insert_db("""
+        UPDATE unread_messages 
+        SET is_read = 1 
+        WHERE receiver = ? 
+        AND message_id IN (
+            SELECT id FROM messages WHERE sender = ?
+        )
+    """, [session['username'], username])
+    
+    return render_template('messages.html', messages=messages, other_user=username)
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    receiver = request.form.get('receiver')
+    message = request.form.get('message')
+    
+    if not receiver or not message:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    try:
+        # Check if there's a connection between users
+        connection = query_db("""
+            SELECT * FROM connections 
+            WHERE ((user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?))
+            AND status = 'accepted'
+        """, [session['username'], receiver, receiver, session['username']], one=True)
+        
+        if not connection:
+            return jsonify({'error': 'You need to be connected with this user to send messages'}), 403
+        
+        # Insert message
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("""
+            INSERT INTO messages (sender, receiver, content, sent_at) 
+            VALUES (?, ?, ?, datetime('now'))
+        """, [session['username'], receiver, message])
+        message_id = cursor.lastrowid
+        
+        # Track as unread
+        cursor.execute("""
+            INSERT INTO unread_messages (message_id, receiver) 
+            VALUES (?, ?)
+        """, [message_id, receiver])
+        
+        db.commit()
+        db.close()
+        
+        return jsonify({'message': 'Message sent'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/update_connection_status', methods=['POST'])
+def update_connection_status():
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    username = request.form.get('username')
+    action = request.form.get('action')
+    
+    if not username or action not in ['accept', 'reject']:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    try:
+        # Check if connection exists and user is the receiver
+        connection = query_db("""
+            SELECT * FROM connections 
+            WHERE user2 = ? AND user1 = ? AND status = 'pending'
+        """, [session['username'], username], one=True)
+        
+        if not connection:
+            return jsonify({'error': 'Connection request not found'}), 404
+        
+        if action == 'accept':
+            insert_db("""
+                UPDATE connections 
+                SET status = 'accepted' 
+                WHERE user2 = ? AND user1 = ?
+            """, [session['username'], username])
+        else:  # reject
+            insert_db("""
+                DELETE FROM connections 
+                WHERE user2 = ? AND user1 = ?
+            """, [session['username'], username])
+        
+        return jsonify({'message': f'Connection {action}ed successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_unread_count/<username>', methods=['GET'])
+def get_unread_count(username):
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    try:
+        unread_count = query_db("""
+            SELECT COUNT(*) as count 
+            FROM unread_messages 
+            WHERE receiver = ? AND is_read = 0
+        """, [username], one=True)
+        
+        return jsonify({'count': unread_count['count']})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_unread_counts', methods=['GET'])
+def get_unread_counts():
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    try:
+        # Get unread counts grouped by sender
+        unread_counts = query_db("""
+            SELECT m.sender, COUNT(*) as count 
+            FROM unread_messages um 
+            JOIN messages m ON um.message_id = m.id 
+            WHERE um.receiver = ? AND um.is_read = 0 
+            GROUP BY m.sender
+        """, [session['username']])
+        
+        return jsonify({'counts': {row['sender']: row['count'] for row in unread_counts}})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/mark_messages_read/<sender>', methods=['POST'])
+def mark_messages_read(sender):
+    if 'username' not in session:
+        return jsonify({'error': 'Please log in'}), 401
+    
+    try:
+        # Mark all messages from this sender as read
+        insert_db("""
+            UPDATE unread_messages 
+            SET is_read = 1 
+            WHERE receiver = ? 
+            AND message_id IN (
+                SELECT id FROM messages WHERE sender = ?
+            )
+        """, [session['username'], sender])
+        
+        return jsonify({'message': 'Messages marked as read'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

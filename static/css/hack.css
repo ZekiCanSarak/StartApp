@@ -14,90 +14,153 @@ body {
 }
 
 .navbar {
-    background-color: #0073b1;
-    color: white;
-    padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: #0073b1;
+    color: white;
+    padding: 1rem 2rem;
     position: fixed; 
     top: 0;
     left: 0;
     width: 100%; 
     z-index: 1000; 
-    height: 61px;
+    height: 60px;
 }
 
 .navbar h1 {
     font-size: 1.5rem;
 }
 
-.navbar .post-hack-btn {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 3px 10px;
-    cursor: pointer;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    width: auto; 
-    text-align: center; 
-    line-height: 2;
+.navbar ul {
+    list-style: none;
+    display: flex;
 }
 
-.navbar .post-hack-btn:hover {
+.navbar ul li {
+    margin-left: 2rem;
+}
+
+.navbar ul li a {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+    padding: 10px;
+    background-color: #0073b1;
+    color: white;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.navbar ul li a:hover {
+    background-color: #005f8a;
+}
+
+.container {
+    margin-left: 250px;
+    padding: 2rem;
+    padding-top: 5rem;
+    width: calc(100% - 250px);
+}
+
+.header-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#hackathon-feed {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.create-post-btn {
+    background-color: #4caf50; 
+    color: white;
+    border: none;
+    padding: 10px 20px; 
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    font-size: 1rem; 
+    font-weight: bold;
+    display: inline-flex; 
+    align-items: center; 
+    gap: 10px; 
+    transition: background-color 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    width: auto; 
+    max-width: 250px; 
+}
+
+.create-post-btn:hover {
     background-color: #45a049;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.create-post-btn i {
+    font-size: 1.2rem;
 }
 
 .sidebar {
-    width: 20%;
-    background-color: #e6e6e6;
-    padding: 1rem;
+    width: 250px;
+    background-color: #f4f4f4;
     height: 100vh;
     position: fixed;
     left: 0;
-    top: 0; 
+    top: 0;
     z-index: 999;
     box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-    padding-top: 5rem !important;
+    padding-top: 80px;
 }
 
 .sidebar ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .sidebar ul li {
-    margin-bottom: 1rem;
+    margin-bottom: 5px;
 }
 
 .sidebar ul li a {
-    color: #333;
-    text-decoration: none;
-    font-weight: bold;
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
+    color: #333;
+    text-decoration: none;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    border-radius: 8px;
+    margin: 0 10px;
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+.sidebar ul li a i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
 }
 
 .sidebar ul li a:hover {
-    background-color: #d6d6d6;
+    background-color: rgba(0, 115, 177, 0.1);
+    color: #0073b1;
 }
 
-.container {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 7rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.sidebar ul li a.active {
+    background-color: #0073b1;
+    color: white;
 }
 
 .category-container {
@@ -105,23 +168,23 @@ body {
     border-radius: 12px;
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
     margin-bottom: 30px;
-    padding: 20px;
-    width: 200%;
-    max-width: 800px;
+    padding: 30px;
+    width: 100%;
 }
 
 .category-container h2 {
     font-size: 1.8rem;
     font-weight: bold;
     color: #0073b1;
-    margin-bottom: 20px;
     text-align: center;
+    margin-top: 0;
+    margin-bottom: 20px;
 }
 
 .hackathon-post {
     width: 100%;
     max-width: 600px;
-    margin: 10px auto;
+    margin: 20px auto;
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 12px;
@@ -434,4 +497,58 @@ button:hover {
 
 .remove-image-btn i {
     font-size: 0.8rem;
+}
+
+.sidebar-divider {
+    font-size: 0.9rem;
+    color: #666;
+    padding: 12px 20px;
+    margin-top: 10px;
+    font-weight: 600;
+    border-top: 1px solid #ddd;
+}
+
+.sidebar-notification {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #ff3b30;
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 0 6px;
+    line-height: 20px;
+}
+
+.sidebar-notification.active {
+    display: flex;
+}
+
+@keyframes notification-pulse {
+    0% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-50%) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+#personalised-hackathons, #other-hackathons, #expired-hackathons {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }

@@ -106,6 +106,13 @@
                 <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
                 <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
                 <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+                <li>
+                    <a href="/connections">
+                        <i class="fas fa-users"></i> Connections
+                        <span class="sidebar-notification" id="total-messages-count"></span>
+                    </a>
+                </li>
             </ul>
         </aside>
 
@@ -177,7 +184,35 @@
 
     <script src="{{ url_for('static', filename='js/index.js')}}"></script>
 
-   
+    {% if logged_in %}
+    <script>
+    async function updateTotalUnreadCount() {
+        try {
+            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const data = await response.json();
+            
+            if (response.ok) {
+                const badge = document.getElementById('total-messages-count');
+                const count = data.count;
+                
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.add('active');
+                } else {
+                    badge.textContent = '';
+                    badge.classList.remove('active');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating total unread count:', error);
+        }
+    }
+
+    // Update total unread count every 10 seconds
+    updateTotalUnreadCount();
+    setInterval(updateTotalUnreadCount, 10000);
+    </script>
+    {% endif %}
 
 </body>
 </html>

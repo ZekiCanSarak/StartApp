@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with {{ other_user }} - StartApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <h1><i class="fas fa-rocket"></i> StartApp</h1>
+            <nav>
+                <ul>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+                <li>
+                    <a href="/connections">
+                        <i class="fas fa-users"></i> Connections
+                        <span class="sidebar-notification" id="total-messages-count"></span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2><i class="fas fa-comment"></i> Chat with {{ other_user }}</h2>
+                    <a href="{{ url_for('connections') }}" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Connections
+                    </a>
+                </div>
+                
+                <div class="messages-container" id="messages-container">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="message {% if message.sender == session.username %}sent{% else %}received{% endif %}">
+                                <div class="message-content">
+                                    <p>{{ message.content }}</p>
+                                    <small class="message-time">{{ message.sent_at }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="no-messages">
+                            <p>No messages yet. Start the conversation!</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="message-input-container">
+                    <form id="message-form" class="message-form">
+                        <div class="input-group">
+                            <input type="text" id="message-input" placeholder=" " required>
+                            <label for="message-input">Type your message...</label>
+                        </div>
+                        <button type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    async function updateTotalUnreadCount() {
+        try {
+            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const data = await response.json();
+            
+            if (response.ok) {
+                const badge = document.getElementById('total-messages-count');
+                const count = data.count;
+                
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.add('active');
+                } else {
+                    badge.textContent = '';
+                    badge.classList.remove('active');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating total unread count:', error);
+        }
+    }
+
+    // Update total unread count every 10 seconds
+    updateTotalUnreadCount();
+    setInterval(updateTotalUnreadCount, 10000);
+
+    // Mark messages as read when viewing the chat
+    async function markMessagesAsRead() {
+        try {
+            await fetch('{{ url_for("mark_messages_read", sender=other_user) }}', {
+                method: 'POST'
+            });
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
+        }
+    }
+
+    // Mark messages as read when the page loads
+    markMessagesAsRead();
+
+    // Scroll to bottom of messages
+    const messagesContainer = document.getElementById('messages-container');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Handle message sending
+    document.getElementById('message-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+        
+        if (!message) return;
+        
+        try {
+            const response = await fetch('{{ url_for("send_message") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `receiver={{ other_user }}&message=${encodeURIComponent(message)}`
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                // Add message to UI
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message sent';
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <p>${message}</p>
+                        <small class="message-time">Just now</small>
+                    </div>
+                `;
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                messageInput.value = '';
+            } else {
+                alert(data.error || 'Failed to send message');
+            }
+        } catch (error) {
+            alert('An error occurred while sending the message');
+        }
+    });
+
+    // Auto-refresh messages every 5 seconds
+    setInterval(async () => {
+        try {
+            const response = await fetch(window.location.href);
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newMessages = doc.getElementById('messages-container').innerHTML;
+            
+            if (newMessages !== messagesContainer.innerHTML) {
+                messagesContainer.innerHTML = newMessages;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        } catch (error) {
+            console.error('Error refreshing messages:', error);
+        }
+    }, 5000);
+    </script>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html> 

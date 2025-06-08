@@ -15,12 +15,11 @@
     <header> 
         <div class="navbar">
             <h1><i class="fas fa-laptop-code"></i> Hackathons</h1>
-            {% if session.get('role') == 'organiser' %}
-            <button class="post-hack-btn" onclick="showForm()">
-                <i class="fas fa-plus-circle"></i> Post New Hackathons
-            </button>
-
-            {% endif %}
+            <nav>
+                <ul>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
         </div>
     </header>
 
@@ -29,19 +28,32 @@
             <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
             <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
             <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+            <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+            <li>
+                <a href="/connections">
+                    <i class="fas fa-users"></i> Connections
+                    <span class="sidebar-notification" id="total-messages-count"></span>
+                </a>
+            </li>
             {% if active_hackathons %}
+                <li class="sidebar-divider">Active Hackathons</li>
                 {% for hackathon in active_hackathons %}
                     <li><a href="/hackathon/{{ hackathon.id }}/updates"><i class="fas fa-bell"></i> {{ hackathon.title }}</a></li>
                 {% endfor %}
-            {% else %}
-                <li>No active hackathons</li>
             {% endif %}
         </ul>
     </aside>
 
     <main class="container">
+        <div class="header-actions">
+            {% if session.get('role') == 'organiser' %}
+            <button class="create-post-btn" onclick="showForm()">
+                <i class="fas fa-plus-circle"></i> Post New Hackathons
+            </button>
+            {% endif %}
+        </div>
+        
         <div id="hackathon-feed">
-    
             <div class="category-container">
                 <h2>Personalised Hackathons for You:</h2>
                 <div id="personalised-hackathons">
@@ -202,6 +214,33 @@
         </form>
     </div>
     <script src="{{ url_for('static', filename='js/hack.js') }}"></script>
+    <script>
+    async function updateTotalUnreadCount() {
+        try {
+            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const data = await response.json();
+            
+            if (response.ok) {
+                const badge = document.getElementById('total-messages-count');
+                const count = data.count;
+                
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.add('active');
+                } else {
+                    badge.textContent = '';
+                    badge.classList.remove('active');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating total unread count:', error);
+        }
+    }
+
+    // Update total unread count every 10 seconds
+    updateTotalUnreadCount();
+    setInterval(updateTotalUnreadCount, 10000);
+    </script>
 
 </body>
 </html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Users - StartApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <h1><i class="fas fa-search"></i> Find Users</h1>
+            <nav>
+                <ul>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users" class="active"><i class="fas fa-search"></i> Find Users</a></li>
+                <li>
+                    <a href="/connections">
+                        <i class="fas fa-users"></i> Connections
+                        <span class="sidebar-notification" id="total-messages-count"></span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <h2>Find Users</h2>
+            
+            <div class="search-container">
+                <form action="{{ url_for('search_users') }}" method="GET" class="search-form">
+                    <div class="input-group">
+                        <input type="text" name="q" placeholder=" " value="{{ search_query }}">
+                        <label for="q">Search users...</label>
+                    </div>
+                    <button type="submit" class="search-submit-btn">
+                        <i class="fas fa-search"></i> Search Users
+                    </button>
+                </form>
+            </div>
+
+            {% if users %}
+                <div class="user-grid">
+                    {% for user in users %}
+                        <div class="user-card">
+                            <div class="user-info">
+                                <h3><i class="fas fa-user"></i> {{ user.username }}</h3>
+                                <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
+                                <button class="connect-btn" data-username="{{ user.username }}">
+                                    <i class="fas fa-user-plus"></i> Connect
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif search_query %}
+                <p class="no-results">No users found matching your search.</p>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+    async function updateTotalUnreadCount() {
+        try {
+            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const data = await response.json();
+            
+            if (response.ok) {
+                const badge = document.getElementById('total-messages-count');
+                const count = data.count;
+                
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.add('active');
+                } else {
+                    badge.textContent = '';
+                    badge.classList.remove('active');
+                }
+            }
+        } catch (error) {
+            console.error('Error updating total unread count:', error);
+        }
+    }
+
+    // Update total unread count every 10 seconds
+    updateTotalUnreadCount();
+    setInterval(updateTotalUnreadCount, 10000);
+
+    document.querySelectorAll('.connect-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const username = e.target.dataset.username;
+            try {
+                const response = await fetch('{{ url_for("connect") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `username=${encodeURIComponent(username)}`
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Connection request sent!');
+                    e.target.disabled = true;
+                    e.target.innerHTML = '<i class="fas fa-check"></i> Request Sent';
+                    e.target.classList.add('sent');
+                } else {
+                    alert(data.error || 'Failed to send connection request');
+                }
+            } catch (error) {
+                alert('An error occurred while sending the connection request');
+            }
+        });
+    });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+</body>
+</html> 

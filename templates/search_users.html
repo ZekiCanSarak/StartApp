@@ -43,9 +43,9 @@
             <h2>Find Users</h2>
             
             <div class="search-container">
-                <form action="{{ url_for('search_users') }}" method="GET" class="search-form">
+                <form action="{{ url_for('search_users') }}" method="GET" class="search-form" autocomplete="off">
                     <div class="input-group">
-                        <input type="text" name="q" placeholder=" " value="{{ search_query }}">
+                        <input type="text" name="q" placeholder=" " value="{{ search_query }}" autocomplete="off">
                         <label for="q">Search users...</label>
                     </div>
                     <button type="submit" class="search-submit-btn">

@@ -41,33 +41,33 @@
 
         <main class="profile-content">
             <h2>Your Profile</h2>
-            <form id="profileForm" method="POST">
+            <form id="profileForm" method="POST" autocomplete="off">
                 <div class="form-group">
                     <label for="name"><i class="fas fa-user-circle"></i> Name:</label>
-                    <input type="text" id="name" name="name" value="{{ user_details[0] }}" disabled>
+                    <input type="text" id="name" name="name" value="{{ user_details[0] }}" disabled autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="age"><i class="fas fa-birthday-cake"></i> Age:</label>
-                    <input type="number" id="age" name="age" value="{{ user_details[1] }}" disabled>
+                    <input type="number" id="age" name="age" value="{{ user_details[1] }}" disabled autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="school"><i class="fas fa-school"></i> School or Workplace:</label>
-                    <input type="text" id="school" name="school" value="{{ user_details[2] }}" disabled>
+                    <input type="text" id="school" name="school" value="{{ user_details[2] }}" disabled autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="skills"><i class="fas fa-code"></i> Coding Languages (Skills):</label>
-                    <input type="text" id="skills" name="skills" value="{{ user_details[3] }}" disabled>
+                    <input type="text" id="skills" name="skills" value="{{ user_details[3] }}" disabled autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label for="hackathon"><i class="fas fa-question-circle"></i> Attended a Hackathon Before?</label>
-                    <select id="hackathon" name="hackathon" disabled>
+                    <select id="hackathon" name="hackathon" disabled autocomplete="off">
                         <option value="Yes" {% if user_details[4] == 'Yes' %}selected{% endif %}>Yes</option>
                         <option value="No" {% if user_details[4] == 'No' %}selected{% endif %}>No</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="preferred_jobs"><i class="fas fa-briefcase"></i> Preferred Job Types:</label>
-                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details[5] }}" disabled>
+                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details[5] }}" disabled autocomplete="off">
                 </div>
                 <button type="button" id="editButton" onclick="enableEdit()">
                     <i class="fas fa-edit"></i> Edit

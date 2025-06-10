@@ -11,17 +11,33 @@ function toggleForm(formId) {
     }
 }
 
-function closeForm(formId) {
-    const form = document.getElementById(formId);
-    if (form) {
-        form.style.display = 'none';
-    }
-}
+// Handle flash messages
+document.addEventListener('DOMContentLoaded', function() {
+    const flashMessages = document.querySelectorAll('.alert');
+    
+    flashMessages.forEach(message => {
+        // Show message for 5 seconds
+        setTimeout(() => {
+            message.classList.add('fade-out');
+            // Remove message after fade animation
+            setTimeout(() => {
+                message.remove();
+            }, 500);
+        }, 5000);
+    });
+});
 
 function showForm(formId) {
     const form = document.getElementById(formId);
     if (form) {
         form.style.display = 'block';
+    }
+}
+
+function closeForm(formId) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.style.display = 'none';
     }
 }
 

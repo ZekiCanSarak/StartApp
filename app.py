@@ -827,5 +827,590 @@ def mark_messages_read(sender):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Resources routes
+@app.route('/resources')
+def resources():
+    if 'username' not in session:
+        return redirect(url_for('home'))
+    return render_template('resources.html')
+
+@app.route('/resources/<topic>')
+def resource_detail(topic):
+    if 'username' not in session:
+        return redirect(url_for('home'))
+    
+    # Define content for each topic
+    topics = {
+        'html': {
+            'title': 'HTML',
+            'icon': 'fab fa-html5',
+            'description': 'Learn the fundamentals of HTML, semantic markup, and best practices for structuring web content.',
+            'sections': [
+                {
+                    'title': 'HTML Basics',
+                    'content': '''
+                        <p>HTML (HyperText Markup Language) is the standard markup language for creating web pages. Here are the key concepts:</p>
+                        <ul>
+                            <li>HTML documents are made up of elements</li>
+                            <li>Elements are defined by tags</li>
+                            <li>Tags usually come in pairs: opening and closing tags</li>
+                            <li>Elements can contain other elements (nesting)</li>
+                        </ul>
+                    ''',
+                    'code_example': '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My First Page</title>
+</head>
+<body>
+    <h1>Welcome!</h1>
+    <p>This is a paragraph.</p>
+</body>
+</html>''',
+                    'resources': [
+                        {'title': 'MDN HTML Guide', 'url': 'https://developer.mozilla.org/en-US/docs/Learn/HTML'},
+                        {'title': 'W3Schools HTML Tutorial', 'url': 'https://www.w3schools.com/html/'}
+                    ]
+                }
+            ]
+        },
+        'css': {
+            'title': 'CSS',
+            'icon': 'fab fa-css3-alt',
+            'description': 'Master CSS styling, layouts, and responsive design techniques for creating beautiful web interfaces.',
+            'sections': [
+                {
+                    'title': 'CSS Fundamentals',
+                    'content': '''
+                        <p>CSS (Cascading Style Sheets) is used to style and layout web pages. Key concepts include:</p>
+                        <ul>
+                            <li>Selectors and properties</li>
+                            <li>Box model</li>
+                            <li>Flexbox and Grid layouts</li>
+                            <li>Responsive design with media queries</li>
+                        </ul>
+                    ''',
+                    'code_example': '''
+/* Basic CSS example */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.button {
+    background-color: #0073b1;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}''',
+                    'resources': [
+                        {'title': 'MDN CSS Guide', 'url': 'https://developer.mozilla.org/en-US/docs/Learn/CSS'},
+                        {'title': 'CSS-Tricks', 'url': 'https://css-tricks.com'}
+                    ]
+                }
+            ]
+        },
+        'javascript': {
+            'title': 'JavaScript',
+            'icon': 'fab fa-js',
+            'description': 'Learn modern JavaScript programming, from basics to advanced concepts and frameworks.',
+            'sections': [
+                {
+                    'title': 'JavaScript Fundamentals',
+                    'content': '''
+                        <p>JavaScript is a versatile programming language for web development. Core concepts include:</p>
+                        <ul>
+                            <li>Variables and data types</li>
+                            <li>Functions and scope</li>
+                            <li>DOM manipulation</li>
+                            <li>Asynchronous programming</li>
+                        </ul>
+                    ''',
+                    'code_example': '''
+// Basic JavaScript example
+function greetUser(name) {
+    return `Hello, ${name}!`;
+}
+
+const button = document.querySelector('.button');
+button.addEventListener('click', () => {
+    const message = greetUser('World');
+    console.log(message);
+});''',
+                    'resources': [
+                        {'title': 'MDN JavaScript Guide', 'url': 'https://developer.mozilla.org/en-US/docs/Web/JavaScript'},
+                        {'title': 'JavaScript.info', 'url': 'https://javascript.info'}
+                    ]
+                }
+            ]
+        },
+        'python': {
+            'title': 'Python',
+            'icon': 'fab fa-python',
+            'description': 'Master Python programming for web development, data science, and automation.',
+            'sections': [
+                {
+                    'title': 'Python Basics',
+                    'content': '''
+                        <p>Python is a versatile, high-level programming language known for its readability and simplicity. Key concepts include:</p>
+                        <ul>
+                            <li>Variables and data structures</li>
+                            <li>Control flow and functions</li>
+                            <li>Object-oriented programming</li>
+                            <li>Modules and packages</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Python basics example
+def calculate_average(numbers):
+    if not numbers:
+        return 0
+    return sum(numbers) / len(numbers)
+
+# List comprehension example
+squares = [x**2 for x in range(10)]
+
+# Class example
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+        
+    def greet(self):
+        return f"Hello, my name is {self.name}!"''',
+                    'resources': [
+                        {'title': 'Python Official Documentation', 'url': 'https://docs.python.org/3/'},
+                        {'title': 'Real Python Tutorials', 'url': 'https://realpython.com'}
+                    ]
+                }
+            ]
+        },
+        'nodejs': {
+            'title': 'Node.js',
+            'icon': 'fab fa-node-js',
+            'description': 'Build scalable server-side applications with Node.js and its ecosystem.',
+            'sections': [
+                {
+                    'title': 'Node.js Fundamentals',
+                    'content': '''
+                        <p>Node.js is a runtime environment that executes JavaScript code outside a web browser. Important concepts include:</p>
+                        <ul>
+                            <li>Event-driven programming</li>
+                            <li>Asynchronous I/O</li>
+                            <li>NPM (Node Package Manager)</li>
+                            <li>Express.js framework</li>
+                        </ul>
+                    ''',
+                    'code_example': '''// Basic Node.js server
+const express = require('express');
+const app = express();
+const port = 3000;
+
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+});
+
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});''',
+                    'resources': [
+                        {'title': 'Node.js Documentation', 'url': 'https://nodejs.org/docs/latest/api/'},
+                        {'title': 'Express.js Guide', 'url': 'https://expressjs.com/'}
+                    ]
+                }
+            ]
+        },
+        'databases': {
+            'title': 'Databases',
+            'icon': 'fas fa-database',
+            'description': 'Learn about different database systems and how to effectively manage data.',
+            'sections': [
+                {
+                    'title': 'Database Fundamentals',
+                    'content': '''
+                        <p>Understanding databases is crucial for modern web development. Key concepts include:</p>
+                        <ul>
+                            <li>Relational vs NoSQL databases</li>
+                            <li>CRUD operations</li>
+                            <li>Database design and normalization</li>
+                            <li>Indexing and optimization</li>
+                        </ul>
+                    ''',
+                    'code_example': '''-- SQL example
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT UNIQUE,
+    email TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Basic queries
+SELECT * FROM users WHERE id = 1;
+INSERT INTO users (username, email) VALUES ('john_doe', 'john@example.com');
+UPDATE users SET email = 'new@example.com' WHERE username = 'john_doe';''',
+                    'resources': [
+                        {'title': 'PostgreSQL Documentation', 'url': 'https://www.postgresql.org/docs/'},
+                        {'title': 'MongoDB Manual', 'url': 'https://docs.mongodb.com/manual/'}
+                    ]
+                }
+            ]
+        },
+        'git': {
+            'title': 'Git Basics',
+            'icon': 'fab fa-git-alt',
+            'description': 'Master version control with Git to track and manage your code changes effectively.',
+            'sections': [
+                {
+                    'title': 'Git Fundamentals',
+                    'content': '''
+                        <p>Git is essential for modern software development. Important concepts include:</p>
+                        <ul>
+                            <li>Basic Git commands</li>
+                            <li>Branching and merging</li>
+                            <li>Resolving conflicts</li>
+                            <li>Best practices for commits</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Common Git commands
+git init  # Initialize a new repository
+git add .  # Stage all changes
+git commit -m "Add new feature"  # Commit changes
+git branch feature  # Create new branch
+git checkout feature  # Switch to branch
+git merge feature  # Merge branch
+git pull origin main  # Pull updates
+git push origin main  # Push changes''',
+                    'resources': [
+                        {'title': 'Git Documentation', 'url': 'https://git-scm.com/doc'},
+                        {'title': 'Git Branching Tutorial', 'url': 'https://learngitbranching.js.org/'}
+                    ]
+                }
+            ]
+        },
+        'github': {
+            'title': 'GitHub',
+            'icon': 'fab fa-github',
+            'description': 'Learn to use GitHub for collaboration, code hosting, and project management.',
+            'sections': [
+                {
+                    'title': 'GitHub Essentials',
+                    'content': '''
+                        <p>GitHub extends Git with powerful collaboration features. Key aspects include:</p>
+                        <ul>
+                            <li>Pull requests and code review</li>
+                            <li>Issue tracking</li>
+                            <li>Project boards</li>
+                            <li>GitHub Actions (CI/CD)</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# GitHub workflow example
+# 1. Fork a repository
+# 2. Clone your fork
+git clone https://github.com/username/repo.git
+
+# 3. Create a feature branch
+git checkout -b feature-name
+
+# 4. Make changes and commit
+git add .
+git commit -m "Add new feature"
+
+# 5. Push to GitHub
+git push origin feature-name
+
+# 6. Create pull request on GitHub''',
+                    'resources': [
+                        {'title': 'GitHub Guides', 'url': 'https://guides.github.com/'},
+                        {'title': 'GitHub Learning Lab', 'url': 'https://lab.github.com/'}
+                    ]
+                }
+            ]
+        },
+        'workflow': {
+            'title': 'Development Workflow',
+            'icon': 'fas fa-code-branch',
+            'description': 'Learn best practices for efficient development workflows and collaboration.',
+            'sections': [
+                {
+                    'title': 'Workflow Best Practices',
+                    'content': '''
+                        <p>A good development workflow is crucial for team success. Important aspects include:</p>
+                        <ul>
+                            <li>Branch naming conventions</li>
+                            <li>Code review processes</li>
+                            <li>Continuous Integration</li>
+                            <li>Deployment strategies</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example Git workflow
+
+# Feature branch naming
+feature/user-authentication
+bugfix/login-error
+hotfix/security-patch
+
+# Commit message format
+type(scope): subject
+
+# Examples:
+feat(auth): add OAuth2 authentication
+fix(ui): resolve button alignment
+docs(api): update endpoint documentation''',
+                    'resources': [
+                        {'title': 'Git Flow', 'url': 'https://nvie.com/posts/a-successful-git-branching-model/'},
+                        {'title': 'Trunk Based Development', 'url': 'https://trunkbaseddevelopment.com/'}
+                    ]
+                }
+            ]
+        },
+        'agile': {
+            'title': 'Agile Methodology',
+            'icon': 'fas fa-tasks',
+            'description': 'Understand Agile principles and practices for effective project management.',
+            'sections': [
+                {
+                    'title': 'Agile Fundamentals',
+                    'content': '''
+                        <p>Agile methodology promotes iterative development and team collaboration. Key concepts include:</p>
+                        <ul>
+                            <li>Scrum framework</li>
+                            <li>Sprint planning</li>
+                            <li>Daily stand-ups</li>
+                            <li>Retrospectives</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example Sprint Board Structure
+
+Backlog
+- User story 1
+- User story 2
+
+Sprint (Current)
+- Task 1 (In Progress)
+- Task 2 (To Do)
+- Task 3 (Done)
+
+Done
+- Previous sprint items
+- Completed features''',
+                    'resources': [
+                        {'title': 'Agile Manifesto', 'url': 'https://agilemanifesto.org/'},
+                        {'title': 'Scrum Guide', 'url': 'https://scrumguides.org/'}
+                    ]
+                }
+            ]
+        },
+        'tools': {
+            'title': 'Project Management Tools',
+            'icon': 'fas fa-tools',
+            'description': 'Explore popular project management tools and their effective usage.',
+            'sections': [
+                {
+                    'title': 'Popular PM Tools',
+                    'content': '''
+                        <p>Project management tools help teams stay organized and productive. Common tools include:</p>
+                        <ul>
+                            <li>Jira for issue tracking</li>
+                            <li>Trello for kanban boards</li>
+                            <li>Slack for communication</li>
+                            <li>Confluence for documentation</li>
+                        </ul>
+                    ''',
+                    'code_example': '''// Example Jira Issue
+{
+    "type": "Story",
+    "priority": "High",
+    "summary": "Implement user authentication",
+    "description": "Add OAuth2 login with Google",
+    "acceptance_criteria": [
+        "Login with Google button works",
+        "User data is stored securely",
+        "Session management implemented"
+    ],
+    "story_points": 5
+}''',
+                    'resources': [
+                        {'title': 'Atlassian Tools', 'url': 'https://www.atlassian.com/software'},
+                        {'title': 'Trello Guides', 'url': 'https://trello.com/guide'}
+                    ]
+                }
+            ]
+        },
+        'best-practices': {
+            'title': 'Development Best Practices',
+            'icon': 'fas fa-check-double',
+            'description': 'Learn industry-standard best practices for writing clean, maintainable code.',
+            'sections': [
+                {
+                    'title': 'Coding Best Practices',
+                    'content': '''
+                        <p>Following best practices leads to better code quality. Key principles include:</p>
+                        <ul>
+                            <li>Clean Code principles</li>
+                            <li>SOLID principles</li>
+                            <li>Code documentation</li>
+                            <li>Testing strategies</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example of clean code principles
+
+# Bad example
+def x(a):
+    return a * 24 * 60
+
+# Good example
+def convert_days_to_minutes(days):
+    HOURS_PER_DAY = 24
+    MINUTES_PER_HOUR = 60
+    return days * HOURS_PER_DAY * MINUTES_PER_HOUR
+
+# Example of SOLID principles
+class PaymentProcessor:
+    def process_payment(self, payment):
+        if payment.type == "credit":
+            self.process_credit_payment(payment)
+        elif payment.type == "debit":
+            self.process_debit_payment(payment)''',
+                    'resources': [
+                        {'title': 'Clean Code', 'url': 'https://www.amazon.com/Clean-Code-Handbook-Software-Craftsmanship/dp/0132350882'},
+                        {'title': 'SOLID Principles', 'url': 'https://www.digitalocean.com/community/conceptual_articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design'}
+                    ]
+                }
+            ]
+        },
+        'rest-api': {
+            'title': 'REST APIs',
+            'icon': 'fas fa-plug',
+            'description': 'Learn how to design, build, and consume RESTful APIs.',
+            'sections': [
+                {
+                    'title': 'REST API Fundamentals',
+                    'content': '''
+                        <p>REST APIs are fundamental to modern web development. Key concepts include:</p>
+                        <ul>
+                            <li>HTTP methods (GET, POST, PUT, DELETE)</li>
+                            <li>Status codes and responses</li>
+                            <li>API authentication</li>
+                            <li>RESTful principles</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example REST API endpoints
+
+# User endpoints
+GET /api/users          # List all users
+POST /api/users         # Create new user
+GET /api/users/{id}     # Get specific user
+PUT /api/users/{id}     # Update user
+DELETE /api/users/{id}  # Delete user
+
+# Example response
+{
+    "status": "success",
+    "data": {
+        "id": 1,
+        "username": "john_doe",
+        "email": "john@example.com",
+        "created_at": "2024-01-01T12:00:00Z"
+    }
+}''',
+                    'resources': [
+                        {'title': 'REST API Tutorial', 'url': 'https://restfulapi.net/'},
+                        {'title': 'API Design Guide', 'url': 'https://google.aip.dev/'}
+                    ]
+                }
+            ]
+        },
+        'authentication': {
+            'title': 'Authentication',
+            'icon': 'fas fa-lock',
+            'description': 'Learn about different authentication methods and security best practices.',
+            'sections': [
+                {
+                    'title': 'Authentication Basics',
+                    'content': '''
+                        <p>Secure authentication is crucial for web applications. Important concepts include:</p>
+                        <ul>
+                            <li>Session-based authentication</li>
+                            <li>JWT (JSON Web Tokens)</li>
+                            <li>OAuth2 and OpenID Connect</li>
+                            <li>Password hashing and security</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example JWT implementation
+import jwt
+
+# Create JWT token
+def create_token(user_id):
+    payload = {
+        'user_id': user_id,
+        'exp': datetime.utcnow() + timedelta(days=1)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+
+# Verify JWT token
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return payload['user_id']
+    except jwt.ExpiredSignatureError:
+        return 'Token expired'
+    except jwt.InvalidTokenError:
+        return 'Invalid token' ''',
+                    'resources': [
+                        {'title': 'OAuth2 Specification', 'url': 'https://oauth.net/2/'},
+                        {'title': 'JWT Introduction', 'url': 'https://jwt.io/introduction'}
+                    ]
+                }
+            ]
+        },
+        'third-party': {
+            'title': 'Third-party APIs',
+            'icon': 'fas fa-puzzle-piece',
+            'description': 'Learn how to integrate and work with various third-party APIs.',
+            'sections': [
+                {
+                    'title': 'API Integration',
+                    'content': '''
+                        <p>Third-party APIs extend your application's capabilities. Important aspects include:</p>
+                        <ul>
+                            <li>API authentication</li>
+                            <li>Rate limiting</li>
+                            <li>Error handling</li>
+                            <li>Data transformation</li>
+                        </ul>
+                    ''',
+                    'code_example': '''# Example: Using requests library with GitHub API
+import requests
+
+def get_github_repos(username):
+    url = f'https://api.github.com/users/{username}/repos'
+    headers = {
+        'Authorization': f'token {GITHUB_TOKEN}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching repos: {e}")
+        return None''',
+                    'resources': [
+                        {'title': 'Public APIs Directory', 'url': 'https://github.com/public-apis/public-apis'},
+                        {'title': 'Postman Learning Center', 'url': 'https://learning.postman.com/'}
+                    ]
+                }
+            ]
+        }
+    }
+    
+    if topic not in topics:
+        return redirect(url_for('resources'))
+        
+    return render_template('resource_detail.html', **topics[topic])
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

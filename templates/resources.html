@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources - StartApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/resources.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <h1><i class="fas fa-book"></i> Learning Resources</h1>
+            <nav>
+                <ul>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+                <li><a href="/connections"><i class="fas fa-users"></i> Connections</a></li>
+                <li><a href="/resources" class="active"><i class="fas fa-book"></i> Resources</a></li>
+            </ul>
+        </aside>
+
+        <main class="resources-content">
+            <h2>Development Resources</h2>
+            
+            <div class="resources-grid">
+                <!-- Frontend Development -->
+                <div class="resource-category">
+                    <h3>Frontend Development</h3>
+                    <div class="resource-boxes">
+                        <a href="/resources/html" class="resource-box">
+                            <i class="fab fa-html5"></i>
+                            <h4>HTML</h4>
+                            <p>Learn HTML basics, semantic markup, and best practices</p>
+                        </a>
+                        <a href="/resources/css" class="resource-box">
+                            <i class="fab fa-css3-alt"></i>
+                            <h4>CSS</h4>
+                            <p>Master CSS styling, layouts, and responsive design</p>
+                        </a>
+                        <a href="/resources/javascript" class="resource-box">
+                            <i class="fab fa-js"></i>
+                            <h4>JavaScript</h4>
+                            <p>Explore JavaScript fundamentals and modern features</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Backend Development -->
+                <div class="resource-category">
+                    <h3>Backend Development</h3>
+                    <div class="resource-boxes">
+                        <a href="/resources/python" class="resource-box">
+                            <i class="fab fa-python"></i>
+                            <h4>Python</h4>
+                            <p>Learn Python programming and web frameworks</p>
+                        </a>
+                        <a href="/resources/nodejs" class="resource-box">
+                            <i class="fab fa-node-js"></i>
+                            <h4>Node.js</h4>
+                            <p>Build scalable backend applications with Node.js</p>
+                        </a>
+                        <a href="/resources/databases" class="resource-box">
+                            <i class="fas fa-database"></i>
+                            <h4>Databases</h4>
+                            <p>Understanding SQL and NoSQL databases</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Version Control & Collaboration -->
+                <div class="resource-category">
+                    <h3>Version Control & Collaboration</h3>
+                    <div class="resource-boxes">
+                        <a href="/resources/git" class="resource-box">
+                            <i class="fab fa-git-alt"></i>
+                            <h4>Git Basics</h4>
+                            <p>Learn version control fundamentals with Git</p>
+                        </a>
+                        <a href="/resources/github" class="resource-box">
+                            <i class="fab fa-github"></i>
+                            <h4>GitHub</h4>
+                            <p>Collaborate effectively using GitHub</p>
+                        </a>
+                        <a href="/resources/workflow" class="resource-box">
+                            <i class="fas fa-code-branch"></i>
+                            <h4>Workflow</h4>
+                            <p>Best practices for Git workflow and collaboration</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Project Management -->
+                <div class="resource-category">
+                    <h3>Project Management</h3>
+                    <div class="resource-boxes">
+                        <a href="/resources/agile" class="resource-box">
+                            <i class="fas fa-tasks"></i>
+                            <h4>Agile</h4>
+                            <p>Understanding Agile methodology and practices</p>
+                        </a>
+                        <a href="/resources/tools" class="resource-box">
+                            <i class="fas fa-tools"></i>
+                            <h4>PM Tools</h4>
+                            <p>Popular project management tools and their usage</p>
+                        </a>
+                        <a href="/resources/best-practices" class="resource-box">
+                            <i class="fas fa-check-double"></i>
+                            <h4>Best Practices</h4>
+                            <p>Project management best practices and tips</p>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- APIs & Integration -->
+                <div class="resource-category">
+                    <h3>APIs & Integration</h3>
+                    <div class="resource-boxes">
+                        <a href="/resources/rest-api" class="resource-box">
+                            <i class="fas fa-plug"></i>
+                            <h4>REST APIs</h4>
+                            <p>Understanding and working with REST APIs</p>
+                        </a>
+                        <a href="/resources/authentication" class="resource-box">
+                            <i class="fas fa-lock"></i>
+                            <h4>Authentication</h4>
+                            <p>Implementing secure authentication in your apps</p>
+                        </a>
+                        <a href="/resources/third-party" class="resource-box">
+                            <i class="fas fa-puzzle-piece"></i>
+                            <h4>Third-party APIs</h4>
+                            <p>Popular third-party APIs and integration guides</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/resources.js') }}"></script>
+</body>
+</html> 

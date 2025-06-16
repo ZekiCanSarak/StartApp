@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 import os
 from werkzeug.utils import secure_filename
+import hashlib
 
 
 app = Flask(__name__)
@@ -12,7 +13,7 @@ app.config['DATABASE'] = 'database.sqlite'
 app.secret_key = '123456789'
 
 # Configure upload folder
-UPLOAD_FOLDER = 'static/hackathon_images'
+UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -93,59 +94,63 @@ def cleanup_old_hackathons(days_threshold=30):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        if 'signup' in request.form:
-            username = request.form['username']
-            email = request.form['email']
-            password = sha256_crypt.hash(request.form['password'])
-            role = request.form.get('role', 'user')  
-
-            try:
-                insert_db("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)", 
-                          (username, email, password, role))
-                flash("Signup successful! You can now login", "success")
-            except sqlite3.IntegrityError:
-                flash("Username or email already exists", "error")
-
-        elif 'login' in request.form:
+        if 'login' in request.form:
             username = request.form['login_username']
             password = request.form['login_password']
-
+            
             user = query_db("SELECT * FROM users WHERE username = ?", [username], one=True)
+            
             if user and sha256_crypt.verify(password, user['password']):
+                session['username'] = username
                 session['logged_in'] = True
-                session['username'] = user['username']
-                session['role'] = user['role'] 
-                flash("Login successful!", "success")
+                flash("Welcome back!", "success")
                 return redirect(url_for('home'))
             else:
                 flash("Invalid username or password!", "error")
-        else:
-            flash("User does not exist. Please signup.", "error")
+                return redirect(url_for('home'))
+        elif 'signup' in request.form:
+            username = request.form['username']
+            email = request.form['email']
+            password = request.form['password']
+            role = request.form['role']
+            
+            try:
+                hashed_password = sha256_crypt.hash(password)
+                insert_db("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)",
+                         (username, email, hashed_password, role))
+                flash("Signup successful! You can now login", "success")
+            except sqlite3.IntegrityError:
+                flash("Username or email already exists", "error")
+            return redirect(url_for('home'))
 
     if 'username' in session:
         username = session['username']
         user_profile = query_db("SELECT preferred_jobs FROM user_profiles WHERE username = ?", [username], one=True)
-        preferred_jobs = user_profile[0].split(',') if user_profile and user_profile[0] else []
+        preferred_jobs = user_profile['preferred_jobs'].split(',') if user_profile and user_profile['preferred_jobs'] else []
 
-        job_conditions = " OR ".join(["title LIKE ? OR description LIKE ?" for _ in preferred_jobs])
-        job_params = [f"%{job.strip()}%" for job in preferred_jobs for _ in range(2)]
+        if preferred_jobs:
+            job_conditions = " OR ".join(["title LIKE ? OR description LIKE ?" for _ in preferred_jobs])
+            job_params = [f"%{job.strip()}%" for job in preferred_jobs for _ in range(2)]
 
-        personalised_jobs = query_db(f"""
-            SELECT * FROM job_posts
-            WHERE {job_conditions}
-            ORDER BY id DESC
-        """, job_params) if job_params else []
+            personalised_jobs = query_db(f"""
+                SELECT * FROM job_posts
+                WHERE {job_conditions}
+                ORDER BY id DESC
+            """, job_params)
 
-        general_jobs = query_db(f"""
-            SELECT * FROM job_posts
-            WHERE NOT ({job_conditions})
-            ORDER BY id DESC
-        """, job_params) if job_params else query_db("SELECT * FROM job_posts ORDER BY id DESC")
+            general_jobs = query_db(f"""
+                SELECT * FROM job_posts
+                WHERE NOT ({job_conditions})
+                ORDER BY id DESC
+            """, job_params)
+        else:
+            personalised_jobs = []
+            general_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
 
         return render_template('index.html', logged_in=True, personalised_jobs=personalised_jobs, general_jobs=general_jobs)
 
     all_jobs = query_db("SELECT * FROM job_posts ORDER BY id DESC")
-    guest_hackathons = query_db("SELECT * FROM hackathons ORDER BY id DESC LIMIT 3")  # Adjust LIMIT as needed
+    guest_hackathons = query_db("SELECT * FROM hackathons ORDER BY id DESC LIMIT 3")
     return render_template('index.html', logged_in=False, general_jobs=all_jobs, guest_hackathons=guest_hackathons)
 
 
@@ -170,7 +175,7 @@ def hack():
     """, [today])
 
     user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
-    user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
+    user_skills = user_profile['skills'].split(',') if user_profile and user_profile['skills'] else []
 
     hackathon_base_query = """
     SELECT h.id, h.title, h.description, h.date, h.location, h.max_participants,
@@ -239,29 +244,34 @@ def hack():
 
 @app.route('/post_hackathon', methods=['POST'])
 def post_hackathon():
-    title = request.form['title']
-    description = request.form['description']
-    date = request.form['date']
-    location = request.form['location']
-    max_participants = request.form.get('max_participants', type=int)
+    if 'username' not in session:
+        return jsonify({'success': False, 'message': 'You need to be logged in to post a hackathon'}), 401
+
+    username = session['username']
+    title = request.form.get('title')
+    description = request.form.get('description')
+    date = request.form.get('date')
+    location = request.form.get('location')
+    max_participants = request.form.get('max_participants')
     hackathon_id = request.form.get('hackathon_id')
-    username = session.get('username')
+    image = request.files.get('image')
     current_image_path = request.form.get('current_image_path')
-    
+
     # Handle image upload
-    image_path = None
-    if 'image' in request.files:
-        file = request.files['image']
-        if file and file.filename and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            # Add timestamp to filename to make it unique
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
-            filename = timestamp + filename
-            # Save file and store relative path
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            image_path = f'hackathon_images/{filename}'  # Store relative path
-    elif current_image_path:  # Keep existing image if no new one is uploaded
-        image_path = current_image_path.replace('static/', '') if current_image_path.startswith('static/') else current_image_path
+    image_path = current_image_path
+    if image and image.filename:
+        if not allowed_file(image.filename):
+            return jsonify({'success': False, 'message': 'Invalid file type. Only images are allowed.'}), 400
+        
+        filename = secure_filename(image.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        
+        # Save the file
+        image_path = os.path.join('uploads', filename)  # Store relative path without 'static/'
+        full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        image.save(full_path)
 
     try:
         db = get_db()
@@ -277,7 +287,7 @@ def post_hackathon():
 
             # If a new image is uploaded or image is removed, delete the old one if it exists
             if ((image_path and image_path != hackathon['image_path']) or not image_path) and hackathon['image_path']:
-                old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(hackathon['image_path']))
+                old_image_path = os.path.join('static', hackathon['image_path'])
                 if os.path.exists(old_image_path):
                     os.remove(old_image_path)
 
@@ -315,9 +325,9 @@ def post_hackathon():
         category = "expired" if datetime.strptime(date, "%Y-%m-%d").date() < today else "other"
 
         user_profile = query_db("SELECT skills FROM user_profiles WHERE username = ?", [username], one=True)
-        user_skills = user_profile[0].split(',') if user_profile and user_profile[0] else []
+        user_skills = user_profile['skills'].split(',') if user_profile and user_profile['skills'] else []
 
-        if any(skill.strip().lower() in (title + description).lower() for skill in user_skills):
+        if user_skills and any(skill.strip().lower() in (title + description).lower() for skill in user_skills):
             category = "matching"
 
         updated_hackathon = query_db("SELECT * FROM hackathons WHERE id = ?", [hackathon_id], one=True)
@@ -439,37 +449,46 @@ def create_post():
         return jsonify({'success': False, 'message': 'An error occurred while saving the job post.'}), 500
      
 
-@app.route('/profile', methods=['GET', 'POST'])
-def profile():
+@app.route('/profile')
+@app.route('/profile/<username>')
+def profile(username=None):
     if 'username' not in session:
-        flash("Please log in to access your profile", "error")
         return redirect(url_for('home'))
 
-    if request.method == 'POST':
-        
-        name = request.form.get('name')
-        age = request.form.get('age')
-        school = request.form.get('school')
-        skills = request.form.get('skills')
-        hackathon = request.form.get('hackathon')
-        preferred_jobs = request.form.get('preferred_jobs')
-        try:
-            existing_profile = query_db("SELECT * FROM user_profiles WHERE username = ?", [session['username']], one=True)
-            if existing_profile:
-                insert_db("UPDATE user_profiles SET name = ?, age = ?, school = ?, skills = ?, hackathon = ?, preferred_jobs = ? WHERE username = ?",
-                          (name, age, school, skills, hackathon, preferred_jobs, session['username']))
-            else:
-                insert_db("INSERT INTO user_profiles (username, name, age, school, skills, hackathon, preferred_jobs) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                          (session['username'], name, age, school, skills, hackathon, preferred_jobs))
-            flash("Profile updated successfully!", "success")
-        except Exception as e:
-            flash("Error updating profile: " + str(e), "error")
-        return redirect(url_for('profile'))  
+    # If no username provided, use the logged-in user's username
+    if username is None:
+        username = session['username']
 
+    # Get user details from both users and user_profiles tables
+    user_details = query_db("""
+        SELECT u.username, u.email, u.role,
+               up.name, up.age, up.school, up.skills, up.hackathon,
+               up.preferred_jobs
+        FROM users u
+        LEFT JOIN user_profiles up ON u.username = up.username
+        WHERE u.username = ?
+    """, [username], one=True)
+
+    if not user_details:
+        flash('User not found!', 'error')
+        return redirect(url_for('home'))
+
+    # Check and award badges
+    check_and_award_badges(username)
     
-    user_details = query_db("SELECT name, age, school, skills, hackathon, preferred_jobs FROM user_profiles WHERE username = ?", [session['username']], one=True)
-    return render_template('profile.html', user_details=user_details)
+    # Get user's badges
+    badges = query_db("""
+        SELECT badge_type, badge_name, 
+               strftime('%Y-%m-%d', awarded_at) as awarded_at 
+        FROM badges 
+        WHERE username = ? 
+        ORDER BY awarded_at DESC
+    """, [username])
 
+    return render_template('profile.html', 
+                         user_details=user_details,
+                         badges=badges,
+                         is_own_profile=session['username'] == username)
 
 @app.route('/join_hackathon', methods=['POST'])
 def join_hackathon():
@@ -1411,6 +1430,913 @@ def get_github_repos(username):
         return redirect(url_for('resources'))
         
     return render_template('resource_detail.html', **topics[topic])
+
+@app.route('/projects')
+def projects():
+    if 'username' not in session:
+        return redirect(url_for('home'))
+
+    username = session['username']
+
+    # Get user's projects (both created and member of)
+    projects_data = query_db("""
+        SELECT p.*, 
+               p.created_by as creator_username,
+               COUNT(DISTINCT CASE WHEN pm2.status = 'accepted' THEN pm2.id ELSE NULL END) as member_count,
+               GROUP_CONCAT(DISTINCT CASE WHEN pm.status = 'accepted' THEN pm.member_role ELSE NULL END) as member_roles
+        FROM projects p
+        LEFT JOIN project_members pm ON p.id = pm.project_id
+        LEFT JOIN project_members pm2 ON p.id = pm2.project_id
+        WHERE (p.created_by = ? OR (pm.username = ? AND pm.status = 'accepted'))
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+    """, [username, username])
+
+    # Convert SQLite Row objects to dictionaries and process member_roles
+    my_projects = []
+    for project in projects_data:
+        project_dict = dict(project)
+        project_dict['member_roles'] = (project_dict['member_roles'].split(',') 
+                                      if project_dict['member_roles'] else [])
+        my_projects.append(project_dict)
+
+    # Get pending project invitations
+    project_invites = query_db("""
+        SELECT p.id as project_id, 
+               p.title as project_title,
+               p.created_by as inviter_username
+        FROM project_members pm
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.username = ? AND pm.status = 'pending'
+    """, [username])
+
+    return render_template('projects.html', 
+                         my_projects=my_projects,
+                         project_invites=project_invites)
+
+@app.route('/create_project', methods=['POST'])
+def create_project():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    title = request.form['title']
+    description = request.form['description']
+    github_repo = request.form.get('github_repo', '')
+    weekly_commitment = request.form.get('weekly_commitment', 0)
+    needed_roles = request.form.getlist('roles[]')
+    required_skills = request.form.get('required_skills', '')
+    username = session['username']
+
+    db = get_db()
+    try:
+        # Create project
+        cursor = db.cursor()
+        cursor.execute("""
+            INSERT INTO projects (title, description, github_repo, weekly_commitment, created_by)
+            VALUES (?, ?, ?, ?, ?)
+        """, (title, description, github_repo, weekly_commitment, username))
+        project_id = cursor.lastrowid
+
+        # Add creator as project member with admin role
+        cursor.execute("""
+            INSERT INTO project_members (project_id, username, member_role, status)
+            VALUES (?, ?, 'admin', 'accepted')
+        """, (project_id, username))
+
+        # Create default task board
+        cursor.execute("""
+            INSERT INTO task_boards (project_id, title)
+            VALUES (?, 'Main Board')
+        """, (project_id,))
+        board_id = cursor.lastrowid
+
+        # Create default lists
+        for position, list_title in enumerate(['To Do', 'In Progress', 'Done']):
+            cursor.execute("""
+                INSERT INTO task_lists (board_id, title, position)
+                VALUES (?, ?, ?)
+            """, (board_id, list_title, position))
+
+        db.commit()
+        flash("Project created successfully!", "success")
+        return redirect(url_for('project_detail', project_id=project_id))
+    except Exception as e:
+        db.rollback()
+        flash(f"Error creating project: {str(e)}", "error")
+        return redirect(url_for('projects'))
+    finally:
+        db.close()
+
+@app.route('/project/<int:project_id>')
+def project_detail(project_id):
+    if 'username' not in session:
+        return redirect(url_for('home'))
+
+    username = session['username']
+    
+    # Get project details with accepted member count
+    project = query_db("""
+        SELECT p.*, 
+               COUNT(DISTINCT CASE WHEN pm.status = 'accepted' THEN pm.id ELSE NULL END) as member_count
+        FROM projects p
+        LEFT JOIN project_members pm ON p.id = pm.project_id
+        WHERE p.id = ?
+        GROUP BY p.id
+    """, [project_id], one=True)
+
+    if not project:
+        flash("Project not found!", "error")
+        return redirect(url_for('projects'))
+
+    # Get accepted team members
+    members = query_db("""
+        SELECT pm.*, u.email,
+               COUNT(se.id) as skill_endorsements
+        FROM project_members pm
+        JOIN users u ON pm.username = u.username
+        LEFT JOIN skill_endorsements se ON pm.username = se.endorsed_user
+        WHERE pm.project_id = ? AND pm.status = 'accepted'
+        GROUP BY pm.username
+    """, [project_id])
+
+    # Check if user is admin
+    is_admin = check_project_admin(project_id, username)
+
+    # Get project updates
+    updates = query_db("""
+        SELECT pu.*, u.email as profile_image
+        FROM project_updates pu
+        JOIN users u ON pu.username = u.username
+        WHERE pu.project_id = ?
+        ORDER BY pu.created_at DESC
+        LIMIT 10
+    """, [project_id])
+
+    # Get pending invites if user is admin
+    pending_invites = []
+    if is_admin:
+        pending_invites = query_db("""
+            SELECT pm.username, u.email
+            FROM project_members pm
+            JOIN users u ON pm.username = u.username
+            WHERE pm.project_id = ? AND pm.status = 'pending'
+        """, [project_id])
+
+    return render_template('project_detail.html',
+                         project=project,
+                         members=members,
+                         updates=updates,
+                         is_admin=is_admin,
+                         pending_invites=pending_invites,
+                         get_user_badges=get_user_badges)
+
+@app.route('/project/<int:project_id>/board')
+def task_board(project_id):
+    if 'username' not in session:
+        return redirect(url_for('home'))
+
+    username = session['username']
+
+    # Check if user is a project member
+    member = query_db("""
+        SELECT * FROM project_members 
+        WHERE project_id = ? AND username = ? AND status = 'accepted'
+    """, [project_id, username], one=True)
+
+    if not member:
+        flash("You must be a project member to view the task board!", "error")
+        return redirect(url_for('project_detail', project_id=project_id))
+
+    # Get project and board details
+    project = query_db("SELECT * FROM projects WHERE id = ?", [project_id], one=True)
+    if not project:
+        flash("Project not found!", "error")
+        return redirect(url_for('projects'))
+
+    board = query_db("""
+        SELECT * FROM task_boards 
+        WHERE project_id = ? 
+        LIMIT 1
+    """, [project_id], one=True)
+
+    if not board:
+        flash("Task board not found!", "error")
+        return redirect(url_for('project_detail', project_id=project_id))
+
+    # Get lists and tasks
+    lists = query_db("""
+        SELECT l.*, COUNT(t.id) as task_count
+        FROM task_lists l
+        LEFT JOIN tasks t ON l.id = t.list_id
+        WHERE l.board_id = ?
+        GROUP BY l.id
+        ORDER BY l.position
+    """, [board['id']])
+
+    if not lists:
+        # Create default lists if none exist
+        db = get_db()
+        try:
+            cursor = db.cursor()
+            for position, list_title in enumerate(['To Do', 'In Progress', 'Done']):
+                cursor.execute("""
+                    INSERT INTO task_lists (board_id, title, position)
+                    VALUES (?, ?, ?)
+                """, (board['id'], list_title, position))
+            db.commit()
+            
+            # Fetch the newly created lists
+            lists = query_db("""
+                SELECT l.*, 0 as task_count
+                FROM task_lists l
+                WHERE l.board_id = ?
+                ORDER BY l.position
+            """, [board['id']])
+        except Exception as e:
+            db.rollback()
+            flash(f"Error creating task lists: {str(e)}", "error")
+        finally:
+            db.close()
+
+    tasks = query_db("""
+        SELECT t.*, u.username as assigned_name
+        FROM tasks t
+        LEFT JOIN users u ON t.assigned_to = u.username
+        WHERE t.list_id IN (
+            SELECT id FROM task_lists WHERE board_id = ?
+        )
+        ORDER BY t.position
+    """, [board['id']])
+
+    # Get project members for task assignment
+    members = query_db("""
+        SELECT pm.username, 
+               COALESCE(up.name, pm.username) as full_name,
+               pm.member_role
+        FROM project_members pm
+        LEFT JOIN user_profiles up ON pm.username = up.username
+        WHERE pm.project_id = ? AND pm.status = 'accepted'
+    """, [project_id])
+
+    # Check if current user is admin
+    is_admin = member['member_role'] == 'admin'
+
+    return render_template('task_board.html',
+                         project=project,
+                         lists=lists,
+                         tasks=tasks,
+                         members=members,
+                         is_admin=is_admin)
+
+def check_project_admin(project_id, username):
+    """Check if a user is an admin of a project."""
+    admin = query_db("""
+        SELECT 1 FROM project_members 
+        WHERE project_id = ? AND username = ? 
+        AND member_role = 'admin' AND status = 'accepted'
+    """, [project_id, username], one=True)
+    return bool(admin)
+
+@app.route('/create_task', methods=['POST'])
+def create_task():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    list_id = request.form.get('list_id', type=int)
+    
+    # Get project_id from list_id
+    board = query_db("""
+        SELECT tb.project_id 
+        FROM task_lists tl
+        JOIN task_boards tb ON tl.board_id = tb.id
+        WHERE tl.id = ?
+    """, [list_id], one=True)
+    
+    if not board:
+        return jsonify({'error': 'Invalid list ID'}), 400
+        
+    # Check if user is admin
+    if not check_project_admin(board['project_id'], session['username']):
+        return jsonify({'error': 'Only project admins can create tasks'}), 403
+
+    title = request.form['title']
+    description = request.form['description']
+    assigned_to = request.form.get('assigned_to', '')
+    due_date = request.form.get('due_date', '')
+    priority = request.form.get('priority', '')
+
+    db = get_db()
+    try:
+        cursor = db.cursor()
+        cursor.execute("""
+            SELECT COALESCE(MAX(position), 0) as max_pos 
+            FROM tasks WHERE list_id = ?
+        """, [list_id])
+        max_pos = cursor.fetchone()['max_pos']
+
+        cursor.execute("""
+            INSERT INTO tasks (list_id, title, description, assigned_to, 
+                             due_date, priority, position)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (list_id, title, description, assigned_to, due_date, 
+              priority, max_pos + 1))
+        
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/update_task_position', methods=['POST'])
+def update_task_position():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    task_id = data.get('task_id')
+    new_list_id = data.get('list_id')
+    position = data.get('position')
+
+    # Check if user is a project member
+    board = query_db("""
+        SELECT tb.project_id 
+        FROM task_lists tl
+        JOIN task_boards tb ON tl.board_id = tb.id
+        WHERE tl.id = ?
+    """, [new_list_id], one=True)
+    
+    if not board:
+        return jsonify({'error': 'Invalid list ID'}), 400
+        
+    # Check if user is a project member
+    member = query_db("""
+        SELECT 1 FROM project_members 
+        WHERE project_id = ? AND username = ? AND status = 'accepted'
+    """, [board['project_id'], session['username']], one=True)
+    
+    if not member:
+        return jsonify({'error': 'Only project members can move tasks'}), 403
+
+    try:
+        db = get_db()
+        db.execute("""
+            UPDATE tasks 
+            SET list_id = ?, position = ?
+            WHERE id = ?
+        """, (new_list_id, position, task_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/update_task/<int:task_id>', methods=['POST'])
+def update_task(task_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Get project_id from task_id
+    board = query_db("""
+        SELECT tb.project_id 
+        FROM tasks t
+        JOIN task_lists tl ON t.list_id = tl.id
+        JOIN task_boards tb ON tl.board_id = tb.id
+        WHERE t.id = ?
+    """, [task_id], one=True)
+    
+    if not board:
+        return jsonify({'error': 'Invalid task ID'}), 400
+        
+    # Check if user is admin
+    if not check_project_admin(board['project_id'], session['username']):
+        return jsonify({'error': 'Only project admins can edit tasks'}), 403
+
+    title = request.form['title']
+    description = request.form['description']
+    assigned_to = request.form.get('assigned_to', '')
+    due_date = request.form.get('due_date', '')
+    priority = request.form.get('priority', '')
+
+    db = get_db()
+    try:
+        cursor = db.cursor()
+        cursor.execute("""
+            UPDATE tasks 
+            SET title = ?, description = ?, assigned_to = ?, 
+                due_date = ?, priority = ?
+            WHERE id = ?
+        """, (title, description, assigned_to, due_date, priority, task_id))
+        
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+def delete_task(task_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Get project_id from task_id
+    board = query_db("""
+        SELECT tb.project_id 
+        FROM tasks t
+        JOIN task_lists tl ON t.list_id = tl.id
+        JOIN task_boards tb ON tl.board_id = tb.id
+        WHERE t.id = ?
+    """, [task_id], one=True)
+    
+    if not board:
+        return jsonify({'error': 'Invalid task ID'}), 400
+        
+    # Check if user is admin
+    if not check_project_admin(board['project_id'], session['username']):
+        return jsonify({'error': 'Only project admins can delete tasks'}), 403
+
+    try:
+        db = get_db()
+        db.execute("DELETE FROM tasks WHERE id = ?", [task_id])
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Gravatar filter for Jinja2
+@app.template_filter('gravatar')
+def gravatar_url(email, size=80):
+    """Generate Gravatar URL for the given email."""
+    email_hash = hashlib.md5(email.lower().encode('utf-8')).hexdigest()
+    return f"https://www.gravatar.com/avatar/{email_hash}?d=identicon&s={size}"
+
+# Timeago filter for Jinja2
+@app.template_filter('timeago')
+def timeago(date):
+    """Format a date in a human-readable time-ago format."""
+    if not date:
+        return ''
+    
+    # Convert string date to datetime if needed
+    if isinstance(date, str):
+        try:
+            # Try parsing with time
+            date = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                # Try parsing just the date
+                date = datetime.strptime(date, '%Y-%m-%d')
+            except ValueError:
+                return ''
+    
+    # Ensure we're comparing in UTC
+    now = datetime.utcnow()
+    
+    # Calculate time difference
+    diff = now - date
+
+    seconds = diff.total_seconds()
+    if seconds < 0:
+        return 'just now'  # Handle case where date is in future due to timezone
+    if seconds < 60:
+        return 'just now'
+    
+    minutes = int(seconds / 60)
+    if minutes < 60:
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    
+    hours = int(minutes / 60)
+    if hours < 24:
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    
+    days = int(hours / 24)
+    if days < 30:
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    
+    months = int(days / 30)
+    if months < 12:
+        return f"{months} month{'s' if months != 1 else ''} ago"
+    
+    years = int(months / 12)
+    return f"{years} year{'s' if years != 1 else ''} ago"
+
+@app.route('/get_task/<int:task_id>')
+def get_task(task_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    try:
+        task = query_db("""
+            SELECT t.*, u.username as assigned_name
+            FROM tasks t
+            LEFT JOIN users u ON t.assigned_to = u.username
+            WHERE t.id = ?
+        """, [task_id], one=True)
+
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
+
+        return jsonify({
+            'id': task['id'],
+            'title': task['title'],
+            'description': task['description'],
+            'assigned_to': task['assigned_to'],
+            'due_date': task['due_date'],
+            'priority': task['priority'],
+            'list_id': task['list_id']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/invite_members', methods=['POST'])
+def invite_members():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    project_id = request.form.get('project_id', type=int)
+    usernames = request.form['usernames'].split(',')
+    role = request.form['role']
+
+    # Check if user is admin
+    if not check_project_admin(project_id, session['username']):
+        flash("Only project admins can invite members!", "error")
+        return redirect(url_for('project_detail', project_id=project_id))
+
+    try:
+        db = get_db()
+        for username in usernames:
+            username = username.strip()
+            if not username:
+                continue
+
+            # Check if user exists
+            user = query_db("SELECT username FROM users WHERE username = ?", 
+                          [username], one=True)
+            if not user:
+                flash(f"User {username} not found", "error")
+                continue
+
+            # Check if already a member or has pending invitation
+            existing = query_db("""
+                SELECT id, status FROM project_members 
+                WHERE project_id = ? AND username = ?
+            """, [project_id, username], one=True)
+            
+            if existing:
+                if existing['status'] == 'accepted':
+                    flash(f"{username} is already a member of this project", "info")
+                else:
+                    flash(f"{username} already has a pending invitation", "info")
+                continue
+
+            # Add new invitation
+            db.execute("""
+                INSERT INTO project_members 
+                (project_id, username, member_role, status)
+                VALUES (?, ?, ?, 'pending')
+            """, (project_id, username, role))
+        
+        db.commit()
+        flash("Invitations sent successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"Error sending invitations: {str(e)}", "error")
+    finally:
+        db.close()
+    
+    return redirect(url_for('project_detail', project_id=project_id))
+
+@app.route('/get_project/<int:project_id>')
+def get_project(project_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    project = query_db("""
+        SELECT p.*, COUNT(pm.id) as member_count
+        FROM projects p
+        LEFT JOIN project_members pm ON p.id = pm.project_id AND pm.status = 'accepted'
+        WHERE p.id = ?
+        GROUP BY p.id
+    """, [project_id], one=True)
+
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+
+    return jsonify(dict(project))
+
+@app.route('/get_project_members/<int:project_id>')
+def get_project_members(project_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Check if user is a project member
+    is_member = query_db("""
+        SELECT 1 FROM project_members 
+        WHERE project_id = ? AND username = ? AND status = 'accepted'
+    """, [project_id, session['username']], one=True)
+
+    if not is_member:
+        return jsonify({'error': 'Not authorized'}), 403
+
+    members = query_db("""
+        SELECT pm.username, pm.member_role, u.email as avatar_url,
+               CASE 
+                   WHEN p.created_by = ? THEN 1
+                   ELSE 0
+               END as can_remove
+        FROM project_members pm
+        JOIN users u ON pm.username = u.username
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.project_id = ? AND pm.status = 'accepted'
+    """, [session['username'], project_id])
+
+    return jsonify([dict(member) for member in members])
+
+@app.route('/update_project/<int:project_id>', methods=['POST'])
+def update_project(project_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Check if user is project admin
+    if not check_project_admin(project_id, session['username']):
+        return jsonify({'error': 'Only project admins can update project details'}), 403
+
+    title = request.form['title']
+    description = request.form['description']
+    github_repo = request.form.get('github_repo', '')
+    weekly_commitment = request.form.get('weekly_commitment', type=int)
+
+    try:
+        db = get_db()
+        db.execute("""
+            UPDATE projects 
+            SET title = ?, description = ?, github_repo = ?, weekly_commitment = ?
+            WHERE id = ?
+        """, (title, description, github_repo, weekly_commitment, project_id))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/remove_project_member', methods=['POST'])
+def remove_project_member():
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    data = request.get_json()
+    project_id = data.get('project_id')
+    username = data.get('username')
+
+    # Check if user is project admin
+    if not check_project_admin(project_id, session['username']):
+        return jsonify({'error': 'Only project admins can remove members'}), 403
+
+    try:
+        db = get_db()
+        # First check if the user is the project creator
+        project = query_db("SELECT created_by FROM projects WHERE id = ?", 
+                         [project_id], one=True)
+        
+        if project and project['created_by'] == username:
+            return jsonify({'error': 'Cannot remove the project creator'}), 400
+
+        # Delete the member
+        db.execute("""
+            DELETE FROM project_members 
+            WHERE project_id = ? AND username = ?
+        """, (project_id, username))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_project/<int:project_id>', methods=['POST'])
+def delete_project(project_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Check if user is project creator
+    project = query_db("""
+        SELECT created_by FROM projects WHERE id = ?
+    """, [project_id], one=True)
+
+    if not project or project['created_by'] != session['username']:
+        return jsonify({'error': 'Only project creator can delete the project'}), 403
+
+    try:
+        db = get_db()
+        # Delete project members
+        db.execute("DELETE FROM project_members WHERE project_id = ?", [project_id])
+        # Delete project tasks
+        db.execute("""
+            DELETE FROM tasks 
+            WHERE list_id IN (
+                SELECT tl.id 
+                FROM task_lists tl
+                JOIN task_boards tb ON tl.board_id = tb.id
+                WHERE tb.project_id = ?
+            )
+        """, [project_id])
+        # Delete task lists
+        db.execute("""
+            DELETE FROM task_lists 
+            WHERE board_id IN (
+                SELECT id FROM task_boards WHERE project_id = ?
+            )
+        """, [project_id])
+        # Delete task board
+        db.execute("DELETE FROM task_boards WHERE project_id = ?", [project_id])
+        # Delete project updates
+        db.execute("DELETE FROM project_updates WHERE project_id = ?", [project_id])
+        # Finally delete the project
+        db.execute("DELETE FROM projects WHERE id = ?", [project_id])
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/respond_to_project_invite', methods=['POST'])
+def respond_to_project_invite():
+    if 'username' not in session:
+        return redirect(url_for('home'))
+
+    project_id = request.form.get('project_id', type=int)
+    response = request.form.get('response')
+    username = session['username']
+
+    try:
+        db = get_db()
+        # Verify the invitation exists and is pending
+        invite = query_db("""
+            SELECT * FROM project_members 
+            WHERE project_id = ? AND username = ? AND status = 'pending'
+        """, [project_id, username], one=True)
+
+        if not invite:
+            flash("Invitation not found or already processed", "error")
+            return redirect(url_for('projects'))
+
+        if response == 'accept':
+            db.execute("""
+                UPDATE project_members 
+                SET status = 'accepted' 
+                WHERE project_id = ? AND username = ?
+            """, (project_id, username))
+            flash("You have joined the project!", "success")
+        else:
+            db.execute("""
+                DELETE FROM project_members 
+                WHERE project_id = ? AND username = ?
+            """, (project_id, username))
+            flash("Invitation declined", "info")
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        flash(f"Error processing invitation: {str(e)}", "error")
+    
+    return redirect(url_for('projects'))
+
+# Badge types and their requirements
+BADGE_TYPES = {
+    'project_creator': {'name': 'Project Pioneer', 'requirement': 1},
+    'team_builder': {'name': 'Team Builder', 'requirement': 5},
+    'skill_master': {'name': 'Skill Master', 'requirement': 10},
+    'hackathon_hero': {'name': 'Hackathon Hero', 'requirement': 3},
+    'network_navigator': {'name': 'Network Navigator', 'requirement': 10},
+    'task_titan': {'name': 'Task Titan', 'requirement': 20}
+}
+
+def check_and_award_badges(username):
+    """Check and award badges based on user's achievements."""
+    db = get_db()
+    
+    # Check Project Creator badge
+    project_count = query_db("SELECT COUNT(*) as count FROM projects WHERE created_by = ?", 
+                           [username], one=True)['count']
+    if project_count >= BADGE_TYPES['project_creator']['requirement']:
+        award_badge(username, 'project_creator')
+    
+    # Check Team Builder badge
+    team_sizes = query_db("""
+        SELECT p.id, COUNT(pm.id) as member_count 
+        FROM projects p 
+        LEFT JOIN project_members pm ON p.id = pm.project_id 
+        WHERE p.created_by = ? AND pm.status = 'accepted'
+        GROUP BY p.id
+    """, [username])
+    if any(project['member_count'] >= BADGE_TYPES['team_builder']['requirement'] for project in team_sizes):
+        award_badge(username, 'team_builder')
+    
+    # Check Skill Master badge
+    endorsements = query_db("""
+        SELECT COUNT(*) as count 
+        FROM skill_endorsements 
+        WHERE endorsed_user = ?
+    """, [username], one=True)['count']
+    if endorsements >= BADGE_TYPES['skill_master']['requirement']:
+        award_badge(username, 'skill_master')
+    
+    # Check Hackathon Hero badge
+    hackathons = query_db("""
+        SELECT COUNT(*) as count 
+        FROM participants 
+        WHERE username = ?
+    """, [username], one=True)['count']
+    if hackathons >= BADGE_TYPES['hackathon_hero']['requirement']:
+        award_badge(username, 'hackathon_hero')
+    
+    # Check Network Navigator badge
+    connections = query_db("""
+        SELECT COUNT(*) as count 
+        FROM connections 
+        WHERE (user1 = ? OR user2 = ?) AND status = 'accepted'
+    """, [username, username], one=True)['count']
+    if connections >= BADGE_TYPES['network_navigator']['requirement']:
+        award_badge(username, 'network_navigator')
+    
+    # Check Task Titan badge
+    completed_tasks = query_db("""
+        SELECT COUNT(*) as count 
+        FROM tasks 
+        WHERE assigned_to = ? AND status = 'completed'
+    """, [username], one=True)['count']
+    if completed_tasks >= BADGE_TYPES['task_titan']['requirement']:
+        award_badge(username, 'task_titan')
+
+def award_badge(username, badge_type):
+    """Award a badge to a user if they don't already have it."""
+    db = get_db()
+    
+    # Check if user already has this badge
+    existing_badge = query_db("""
+        SELECT id FROM badges 
+        WHERE username = ? AND badge_type = ?
+    """, [username, badge_type], one=True)
+    
+    if not existing_badge:
+        db.execute("""
+            INSERT INTO badges (username, badge_type, badge_name) 
+            VALUES (?, ?, ?)
+        """, (username, badge_type, BADGE_TYPES[badge_type]['name']))
+        db.commit()
+        flash(f"Congratulations! You've earned the {BADGE_TYPES[badge_type]['name']} badge!", "success")
+
+def get_user_badges(username):
+    """Get all badges earned by a user."""
+    return query_db("""
+        SELECT badge_type, badge_name, awarded_at 
+        FROM badges 
+        WHERE username = ? 
+        ORDER BY awarded_at DESC
+    """, [username])
+
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
+
+    try:
+        db = get_db()
+        
+        # Get form data
+        name = request.form.get('name')
+        age = request.form.get('age')
+        school = request.form.get('school')
+        skills = request.form.get('skills')
+        hackathon = request.form.get('hackathon')
+        preferred_jobs = request.form.get('preferred_jobs')
+
+        # Check if user profile exists
+        existing_profile = query_db("""
+            SELECT id FROM user_profiles WHERE username = ?
+        """, [session['username']], one=True)
+
+        if existing_profile:
+            # Update existing profile
+            db.execute("""
+                UPDATE user_profiles 
+                SET name = ?, age = ?, school = ?, skills = ?, 
+                    hackathon = ?, preferred_jobs = ?
+                WHERE username = ?
+            """, (name, age, school, skills, hackathon, 
+                  preferred_jobs, session['username']))
+        else:
+            # Create new profile
+            db.execute("""
+                INSERT INTO user_profiles 
+                (username, name, age, school, skills, hackathon, preferred_jobs)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (session['username'], name, age, school, skills, hackathon, 
+                  preferred_jobs))
+        
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

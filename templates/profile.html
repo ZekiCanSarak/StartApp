@@ -37,49 +37,83 @@
                     </a>
                 </li>
                 <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
+                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
             </ul>
         </aside>
 
-        <main class="profile-content">
-            <h2>Your Profile</h2>
+        <main class="main-content">
+            <div class="profile-header">
+                <h2>Your Profile</h2>
+            </div>
+
             <form id="profileForm" method="POST" autocomplete="off">
                 <div class="form-group">
-                    <label for="name"><i class="fas fa-user-circle"></i> Name:</label>
-                    <input type="text" id="name" name="name" value="{{ user_details[0] }}" disabled autocomplete="off">
+                    <label for="username"><i class="fas fa-user"></i> Username:</label>
+                    <input type="text" id="username" name="username" value="{{ user_details.username }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                    <input type="email" id="email" name="email" value="{{ user_details.email }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-id-card"></i> Full Name:</label>
+                    <input type="text" id="name" name="name" value="{{ user_details.name or 'None' }}" disabled>
                 </div>
                 <div class="form-group">
                     <label for="age"><i class="fas fa-birthday-cake"></i> Age:</label>
-                    <input type="number" id="age" name="age" value="{{ user_details[1] }}" disabled autocomplete="off">
+                    <input type="number" id="age" name="age" value="{{ user_details.age or 'None' }}" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="school"><i class="fas fa-school"></i> School or Workplace:</label>
-                    <input type="text" id="school" name="school" value="{{ user_details[2] }}" disabled autocomplete="off">
+                    <label for="school"><i class="fas fa-school"></i> School/University:</label>
+                    <input type="text" id="school" name="school" value="{{ user_details.school or 'None' }}" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="skills"><i class="fas fa-code"></i> Coding Languages (Skills):</label>
-                    <input type="text" id="skills" name="skills" value="{{ user_details[3] }}" disabled autocomplete="off">
+                    <label for="skills"><i class="fas fa-tools"></i> Skills:</label>
+                    <input type="text" id="skills" name="skills" value="{{ user_details.skills or 'None' }}" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="hackathon"><i class="fas fa-question-circle"></i> Attended a Hackathon Before?</label>
-                    <select id="hackathon" name="hackathon" disabled autocomplete="off">
-                        <option value="Yes" {% if user_details[4] == 'Yes' %}selected{% endif %}>Yes</option>
-                        <option value="No" {% if user_details[4] == 'No' %}selected{% endif %}>No</option>
-                    </select>
+                    <label for="hackathon"><i class="fas fa-laptop-code"></i> Hackathon Experience:</label>
+                    <input type="text" id="hackathon" name="hackathon" value="{{ user_details.hackathon or 'None' }}" disabled>
                 </div>
                 <div class="form-group">
                     <label for="preferred_jobs"><i class="fas fa-briefcase"></i> Preferred Job Types:</label>
-                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details[5] }}" disabled autocomplete="off">
+                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details.preferred_jobs or 'None' }}" disabled>
                 </div>
-                <button type="button" id="editButton" onclick="enableEdit()">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button type="submit" id="saveButton" onclick="saveChanges()" style="display: none;">
-                    <i class="fas fa-save"></i> Save
-                </button>
-                <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">
-                    <i class="fas fa-times-circle"></i> Cancel
-                </button>
+
+                {% if is_own_profile %}
+                <div class="button-group">
+                    <button type="button" id="editButton" onclick="enableEdit()">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button type="submit" id="saveButton" style="display: none;">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+                {% endif %}
             </form>
+
+            <!-- Badges Section -->
+            <section class="badges-section">
+                <h3><i class="fas fa-award"></i> Achievements</h3>
+                <div class="badges-grid">
+                    {% for badge in badges %}
+                    <div class="badge-card">
+                        <div class="badge-icon">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <div class="badge-info">
+                            <h4>{{ badge.badge_name }}</h4>
+                            <span class="badge-date">Earned {{ badge.awarded_at }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="no-badges">Start participating to earn badges!</p>
+                    {% endfor %}
+                </div>
+            </section>
         </main>
     </div>
 

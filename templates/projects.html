@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - StartApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/projects.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <h1><i class="fas fa-project-diagram"></i> Projects</h1>
+            <nav>
+                <ul>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+                <li><a href="/connections"><i class="fas fa-users"></i> Connections</a></li>
+                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
+                <li><a href="/projects" class="active"><i class="fas fa-project-diagram"></i> Projects</a></li>
+            </ul>
+        </aside>
+
+        <main class="projects-content">
+            <div class="projects-header">
+                <h2>Your Projects</h2>
+                <button class="create-project-btn" onclick="showCreateProjectForm()">
+                    <i class="fas fa-plus"></i> Create Project
+                </button>
+            </div>
+
+            <!-- Project Creation Form -->
+            <div id="createProjectForm" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h3>Create New Project</h3>
+                    <form action="{{ url_for('create_project') }}" method="POST" autocomplete="off">
+                        <div class="form-group">
+                            <label for="project-title">Project Title</label>
+                            <input type="text" id="project-title" name="title" required placeholder="Enter project title">
+                        </div>
+                        <div class="form-group">
+                            <label for="project-description">Description</label>
+                            <textarea id="project-description" name="description" required placeholder="Describe your project"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="github-repo">GitHub Repository URL (Optional)</label>
+                            <input type="text" id="github-repo" name="github_repo" placeholder="e.g., https://github.com/username/repo">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Needed Roles</label>
+                            <div class="role-chips" id="needed-roles">
+                                <div class="role-chip">
+                                    <input type="checkbox" name="roles[]" value="frontend" id="role-frontend">
+                                    <label for="role-frontend">Frontend Dev</label>
+                                </div>
+                                <div class="role-chip">
+                                    <input type="checkbox" name="roles[]" value="backend" id="role-backend">
+                                    <label for="role-backend">Backend Dev</label>
+                                </div>
+                                <div class="role-chip">
+                                    <input type="checkbox" name="roles[]" value="fullstack" id="role-fullstack">
+                                    <label for="role-fullstack">Full Stack</label>
+                                </div>
+                                <div class="role-chip">
+                                    <input type="checkbox" name="roles[]" value="ui-ux" id="role-ui-ux">
+                                    <label for="role-ui-ux">UI/UX Designer</label>
+                                </div>
+                                <div class="role-chip">
+                                    <input type="checkbox" name="roles[]" value="pm" id="role-pm">
+                                    <label for="role-pm">Project Manager</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="required-skills">Required Skills (comma-separated)</label>
+                            <input type="text" id="required-skills" name="required_skills" placeholder="e.g., Python, React, UI Design">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="weekly-commitment">Expected Weekly Commitment</label>
+                            <select id="weekly-commitment" name="weekly_commitment" required>
+                                <option value="">Select time commitment</option>
+                                <option value="5">0-5 hours per week</option>
+                                <option value="10">5-10 hours per week</option>
+                                <option value="20">10-20 hours per week</option>
+                                <option value="40">20+ hours per week</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" onclick="hideCreateProjectForm()" class="cancel-btn">Cancel</button>
+                            <button type="submit" class="submit-btn">Create Project</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="projects-grid">
+                {% for project in my_projects %}
+                <div class="project-card">
+                    <div class="project-header">
+                        <h3>{{ project.title }}</h3>
+                        {% if project.creator_username == session.username %}
+                        <span class="creator-badge">Creator</span>
+                        {% endif %}
+                    </div>
+                    <p class="project-description">{{ project.description }}</p>
+                    <div class="project-meta">
+                        <span><i class="fas fa-users"></i> {{ project.member_count }} members</span>
+                        <span><i class="fas fa-clock"></i> {{ project.weekly_commitment }}h/week</span>
+                        {% if project.github_repo %}
+                        <a href="{{ project.github_repo }}" target="_blank" class="github-link">
+                            <i class="fab fa-github"></i> View Repository
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="project-roles">
+                        {% for role in project.member_roles %}
+                        <span class="role-bubble {{ role }}">
+                            {% if role == 'admin' %}
+                                Admin
+                            {% elif role == 'frontend' %}
+                                Frontend Dev
+                            {% elif role == 'backend' %}
+                                Backend Dev
+                            {% elif role == 'fullstack' %}
+                                Full Stack
+                            {% elif role == 'ui-ux' %}
+                                UI/UX Designer
+                            {% elif role == 'pm' %}
+                                Project Manager
+                            {% else %}
+                                {{ role | title }}
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <div class="project-actions">
+                        <a href="{{ url_for('project_detail', project_id=project.id) }}" class="view-btn">
+                            <i class="fas fa-eye"></i> View Project
+                        </a>
+                        {% if project.creator_username == session.username %}
+                        <button onclick="showManageProjectModal({{ project.id }})" class="manage-btn">
+                            <i class="fas fa-cog"></i> Manage
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Project Invitations -->
+            {% if project_invites %}
+            <div class="project-invites-section">
+                <h3>Project Invitations</h3>
+                <div class="invites-grid">
+                    {% for invite in project_invites %}
+                    <div class="invite-card">
+                        <h4>{{ invite.project_title }}</h4>
+                        <p>Invited by: {{ invite.inviter_username }}</p>
+                        <div class="invite-actions">
+                            <form action="{{ url_for('respond_to_project_invite') }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="project_id" value="{{ invite.project_id }}">
+                                <input type="hidden" name="response" value="accept">
+                                <button type="submit" class="accept-btn">Accept</button>
+                            </form>
+                            <form action="{{ url_for('respond_to_project_invite') }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="project_id" value="{{ invite.project_id }}">
+                                <input type="hidden" name="response" value="decline">
+                                <button type="submit" class="decline-btn">Decline</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <!-- Manage Project Modal -->
+    <div id="manageProjectModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>Manage Project</h3>
+            <div class="manage-options">
+                <div class="manage-section">
+                    <h4>Project Settings</h4>
+                    <form id="editProjectForm">
+                        <input type="hidden" id="edit-project-id" name="project_id">
+                        <div class="form-group">
+                            <label for="edit-project-title">Project Title</label>
+                            <input type="text" id="edit-project-title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-project-description">Description</label>
+                            <textarea id="edit-project-description" name="description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-github-repo">GitHub Repository URL</label>
+                            <input type="text" id="edit-github-repo" name="github_repo">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-weekly-commitment">Weekly Commitment</label>
+                            <select id="edit-weekly-commitment" name="weekly_commitment" required>
+                                <option value="5">0-5 hours per week</option>
+                                <option value="10">5-10 hours per week</option>
+                                <option value="20">10-20 hours per week</option>
+                                <option value="40">20+ hours per week</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" onclick="hideManageProjectModal()" class="cancel-btn">Cancel</button>
+                            <button type="submit" class="submit-btn">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="manage-section">
+                    <h4>Team Members</h4>
+                    <div id="teamMembersList" class="team-members-list">
+                        <!-- Team members will be loaded dynamically -->
+                    </div>
+                </div>
+
+                <div class="manage-section danger-zone">
+                    <h4>Danger Zone</h4>
+                    <button onclick="deleteProject()" class="delete-project-btn">
+                        <i class="fas fa-trash"></i> Delete Project
+                    </button>
+                </div>
+            </div>
+            <button onclick="hideManageProjectModal()" class="close-modal-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/projects.js') }}"></script>
+</body>
+</html> 

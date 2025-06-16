@@ -36,6 +36,7 @@
                 </a>
             </li>
             <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
+            <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
             {% if active_hackathons %}
                 <li class="sidebar-divider">Active Hackathons</li>
                 {% for hackathon in active_hackathons %}
@@ -63,7 +64,7 @@
                         <div class="hackathon-post" data-id="{{ hackathon.id }}">
                             {% if hackathon.image_path %}
                             <div class="hackathon-image">
-                                <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                                <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
                             </div>
                             {% endif %}
                             <h3>{{ hackathon.title }}</h3>
@@ -103,7 +104,7 @@
                     <div class="hackathon-post" data-id="{{ hackathon.id }}">
                         {% if hackathon.image_path %}
                         <div class="hackathon-image">
-                            <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                            <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
                         </div>
                         {% endif %}
                         <h3>{{ hackathon.title }}</h3>
@@ -140,7 +141,7 @@
                     <div class="hackathon-post expired">
                         {% if hackathon.image_path %}
                         <div class="hackathon-image">
-                            <img src="{{ url_for('static', filename=hackathon.image_path.replace('static/', '')) }}" alt="{{ hackathon.title }}">
+                            <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
                         </div>
                         {% endif %}
                         <h3>{{ hackathon.title }}</h3>

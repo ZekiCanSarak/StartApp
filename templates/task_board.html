@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Board - {{ project.title }} - StartApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/task_board.css') }}">
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+</head>
+<body data-is-admin="{{ 'true' if is_admin else 'false' }}">
+    <header>
+        <div class="navbar">
+            <h1><i class="fas fa-tasks"></i> Task Board</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('project_detail', project_id=project.id) }}">Back to Project</a></li>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <ul>
+                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
+                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
+                <li><a href="/connections"><i class="fas fa-users"></i> Connections</a></li>
+                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
+                <li><a href="/projects" class="active"><i class="fas fa-project-diagram"></i> Projects</a></li>
+            </ul>
+        </aside>
+
+        <main class="board-content">
+            <div class="board-header">
+                <div class="board-info">
+                    <h2>{{ project.title }} - Task Board</h2>
+                    {% if is_admin %}
+                    <button onclick="showCreateTaskModal()" class="create-task-btn">
+                        <i class="fas fa-plus"></i> Create Task
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="board-filters">
+                    <select id="assigneeFilter" onchange="filterTasks()">
+                        <option value="">All Assignees</option>
+                        {% for member in members %}
+                        <option value="{{ member.username }}">{{ member.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="priorityFilter" onchange="filterTasks()">
+                        <option value="">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="board-lists">
+                {% for list in lists %}
+                <div class="task-list" data-list-id="{{ list.id }}">
+                    <div class="list-header">
+                        <h3>{{ list.title }}</h3>
+                        <span class="task-count">{{ list.task_count }}</span>
+                    </div>
+                    <div class="task-cards" id="list-{{ list.id }}">
+                        {% for task in tasks if task.list_id == list.id %}
+                        <div class="task-card" data-task-id="{{ task.id }}" 
+                             data-assignee="{{ task.assigned_to }}" 
+                             data-priority="{{ task.priority }}">
+                            <div class="task-header">
+                                <h4>{{ task.title }}</h4>
+                                <div class="task-badges">
+                                    {% if task.priority %}
+                                    <span class="priority-badge {{ task.priority }}">
+                                        {{ task.priority }}
+                                    </span>
+                                    {% endif %}
+                                    {% if task.due_date %}
+                                    <span class="due-date-badge">
+                                        <i class="fas fa-calendar"></i>
+                                        {{ task.due_date }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="task-description">{{ task.description }}</p>
+                            {% if task.assigned_to %}
+                            <div class="task-assignee">
+                                <span class="assignee-label">Assigned to:</span>
+                                <span class="assignee-name">{{ task.assigned_name }}</span>
+                            </div>
+                            {% endif %}
+                            {% if is_admin %}
+                            <div class="task-actions">
+                                <button onclick="showEditTaskModal({{ task.id }})" class="edit-btn">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteTask({{ task.id }})" class="delete-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Create Task Modal -->
+            <div id="createTaskModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h3>Create New Task</h3>
+                    <form id="createTaskForm">
+                        <input type="hidden" name="list_id" id="list_id" value="{{ lists[0].id if lists }}">
+                        <div class="form-group">
+                            <label for="task-title">Title</label>
+                            <input type="text" id="task-title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-description">Description</label>
+                            <textarea id="task-description" name="description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-assignee">Assign To</label>
+                            <select id="task-assignee" name="assigned_to">
+                                <option value="">Unassigned</option>
+                                {% for member in members %}
+                                <option value="{{ member.username }}">{{ member.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-priority">Priority</label>
+                            <select id="task-priority" name="priority">
+                                <option value="">None</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="task-due-date">Due Date</label>
+                            <input type="date" id="task-due-date" name="due_date">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" onclick="hideCreateTaskModal()" class="cancel-btn">Cancel</button>
+                            <button type="submit" class="submit-btn">Create Task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Edit Task Modal -->
+            <div id="editTaskModal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <h3>Edit Task</h3>
+                    <form id="editTaskForm">
+                        <input type="hidden" name="task_id" id="edit_task_id">
+                        <div class="form-group">
+                            <label for="edit-task-title">Title</label>
+                            <input type="text" id="edit-task-title" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-description">Description</label>
+                            <textarea id="edit-task-description" name="description" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-assignee">Assign To</label>
+                            <select id="edit-task-assignee" name="assigned_to">
+                                <option value="">Unassigned</option>
+                                {% for member in members %}
+                                <option value="{{ member.username }}">{{ member.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-priority">Priority</label>
+                            <select id="edit-task-priority" name="priority">
+                                <option value="">None</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-due-date">Due Date</label>
+                            <input type="date" id="edit-task-due-date" name="due_date">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" onclick="hideEditTaskModal()" class="cancel-btn">Cancel</button>
+                            <button type="submit" class="submit-btn">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/task_board.js') }}"></script>
+</body>
+</html> 

@@ -108,7 +108,7 @@ function addHackathonToFeed(hackathon) {
     // Ensure proper image path formatting
     const imageHtml = hackathon.image_path 
         ? `<div class="hackathon-image">
-               <img src="/static/${hackathon.image_path.replace(/^static\//, '')}" alt="${hackathon.title}">
+               <img src="/static/${hackathon.image_path}" alt="${hackathon.title}">
            </div>`
         : '';
 

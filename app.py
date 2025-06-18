@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, flash
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, flash, current_app
 from passlib.hash import sha256_crypt
 import sqlite3
 from datetime import datetime, timedelta
@@ -6,11 +6,152 @@ from urllib.parse import urlencode
 import os
 from werkzeug.utils import secure_filename
 import hashlib
+import json
 
+def init_db():
+    """Initialize the database."""
+    db = sqlite3.connect('database.sqlite')
+    db.row_factory = sqlite3.Row
+    
+    # Create users table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
+    """)
+    
+    # Create user_profiles table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS user_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            name TEXT,
+            age INTEGER,
+            school TEXT,
+            skills TEXT,
+            hackathon TEXT,
+            preferred_jobs TEXT,
+            FOREIGN KEY (username) REFERENCES users(username)
+        )
+    """)
+    
+    # Create hackathons table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS hackathons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            date TEXT NOT NULL,
+            location TEXT,
+            max_participants INTEGER NOT NULL,
+            created_by TEXT NOT NULL,
+            image_path TEXT,
+            FOREIGN KEY (created_by) REFERENCES users(username)
+        )
+    """)
+    
+    # Create participants table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS participants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hackathon_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            FOREIGN KEY (hackathon_id) REFERENCES hackathons(id),
+            FOREIGN KEY (username) REFERENCES users(username),
+            UNIQUE(hackathon_id, username)
+        )
+    """)
+    
+    # Create job_posts table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS job_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            url TEXT,
+            username TEXT NOT NULL,
+            date TEXT NOT NULL,
+            FOREIGN KEY (username) REFERENCES users(username)
+        )
+    """)
+    
+    # Create hackathon_updates table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS hackathon_updates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hackathon_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (hackathon_id) REFERENCES hackathons(id)
+        )
+    """)
+    
+    # Create badges table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS badges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            badge_type TEXT NOT NULL,
+            badge_name TEXT NOT NULL,
+            awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (username) REFERENCES users(username),
+            UNIQUE(username, badge_type)
+        )
+    """)
+    
+    # Create skill_endorsements table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS skill_endorsements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            endorsed_user TEXT NOT NULL,
+            endorser TEXT NOT NULL,
+            skill TEXT NOT NULL,
+            endorsed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (endorsed_user) REFERENCES users(username),
+            FOREIGN KEY (endorser) REFERENCES users(username),
+            UNIQUE(endorsed_user, endorser, skill)
+        )
+    """)
+    
+    # Create connections table if it doesn't exist
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS connections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user1 TEXT NOT NULL,
+            user2 TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user1) REFERENCES users(username),
+            FOREIGN KEY (user2) REFERENCES users(username),
+            UNIQUE(user1, user2)
+        )
+    """)
+    
+    db.commit()
+    db.close()
+
+def get_db():
+    if 'db' not in g:
+        g.db = sqlite3.connect(
+            'database.sqlite',
+            detect_types=sqlite3.PARSE_DECLTYPES
+        )
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
 app.config['DATABASE'] = 'database.sqlite'
-app.secret_key = '123456789'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Initialize database at startup
+with app.app_context():
+    init_db()
 
 # Configure upload folder
 UPLOAD_FOLDER = 'static/uploads'
@@ -22,11 +163,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def get_db():
-     db = sqlite3.connect('database.sqlite')
-     db.row_factory = sqlite3.Row
-     return db
 
 def query_db(query, args=(), one=False):
      cur = get_db().execute(query, args)
@@ -1497,11 +1633,19 @@ def create_project():
         """, (title, description, github_repo, weekly_commitment, username))
         project_id = cursor.lastrowid
 
+        # Get creator's skills from their profile
+        user_profile = query_db("""
+            SELECT skills FROM user_profiles 
+            WHERE username = ?
+        """, [username], one=True)
+        
+        skills = user_profile['skills'] if user_profile and user_profile['skills'] else None
+
         # Add creator as project member with admin role
         cursor.execute("""
-            INSERT INTO project_members (project_id, username, member_role, status)
-            VALUES (?, ?, 'admin', 'accepted')
-        """, (project_id, username))
+            INSERT INTO project_members (project_id, username, member_role, status, skills_utilized)
+            VALUES (?, ?, 'admin', 'accepted', ?)
+        """, (project_id, username, skills))
 
         # Create default task board
         cursor.execute("""
@@ -1548,16 +1692,37 @@ def project_detail(project_id):
         flash("Project not found!", "error")
         return redirect(url_for('projects'))
 
-    # Get accepted team members
-    members = query_db("""
-        SELECT pm.*, u.email,
-               COUNT(se.id) as skill_endorsements
+    # First get members with their basic info and skills
+    members_rows = query_db("""
+        SELECT pm.*, u.email, pm.skills_utilized
         FROM project_members pm
         JOIN users u ON pm.username = u.username
-        LEFT JOIN skill_endorsements se ON pm.username = se.endorsed_user
         WHERE pm.project_id = ? AND pm.status = 'accepted'
-        GROUP BY pm.username
     """, [project_id])
+
+    # Convert SQLite Row objects to dictionaries
+    members = [dict(member) for member in members_rows]
+
+    # Then for each member, get their skill endorsements for this project
+    for member in members:
+        if member['skills_utilized']:
+            skills = [skill.strip() for skill in member['skills_utilized'].split(',')]
+            endorsements = {}
+            
+            # Initialize all skills with 0 endorsements
+            for skill in skills:
+                # Get endorsement count for each skill in this project
+                endorsement_count = query_db("""
+                    SELECT COUNT(*) as count
+                    FROM skill_endorsements
+                    WHERE endorsed_user = ? 
+                    AND skill = ? 
+                    AND project_id = ?
+                """, [member['username'], skill, project_id], one=True)['count']
+                
+                endorsements[skill] = endorsement_count
+            
+            member['skill_endorsements'] = endorsements
 
     # Check if user is admin
     is_admin = check_project_admin(project_id, username)
@@ -2180,11 +2345,21 @@ def respond_to_project_invite():
             return redirect(url_for('projects'))
 
         if response == 'accept':
+            # Get user's skills from their profile
+            user_profile = query_db("""
+                SELECT skills FROM user_profiles 
+                WHERE username = ?
+            """, [username], one=True)
+            
+            skills = user_profile['skills'] if user_profile and user_profile['skills'] else None
+
+            # Update project member with accepted status and skills
             db.execute("""
                 UPDATE project_members 
-                SET status = 'accepted' 
+                SET status = 'accepted',
+                    skills_utilized = ?
                 WHERE project_id = ? AND username = ?
-            """, (project_id, username))
+            """, (skills, project_id, username))
             flash("You have joined the project!", "success")
         else:
             db.execute("""
@@ -2333,10 +2508,235 @@ def update_profile():
             """, (session['username'], name, age, school, skills, hackathon, 
                   preferred_jobs))
         
+        # Update skills in all projects where the user is a member
+        db.execute("""
+            UPDATE project_members 
+            SET skills_utilized = ?
+            WHERE username = ? AND status = 'accepted'
+        """, (skills, session['username']))
+        
         db.commit()
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/endorse_skill', methods=['POST'])
+def endorse_skill():
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Please log in to endorse skills'})
+
+    endorsed_user = request.form.get('username')
+    skill = request.form.get('skill')
+    project_id = request.form.get('project_id')  # Get project_id from the form
+    endorser = session['username']
+
+    if not endorsed_user or not skill or not project_id:
+        return jsonify({'success': False, 'error': 'Missing required fields'})
+
+    if endorsed_user == endorser:
+        return jsonify({'success': False, 'error': 'You cannot endorse your own skills'})
+
+    db = get_db()
+    try:
+        # Check if this endorsement already exists for this project
+        existing = query_db("""
+            SELECT id FROM skill_endorsements 
+            WHERE endorsed_user = ? AND endorser = ? AND skill = ? AND project_id = ?
+        """, [endorsed_user, endorser, skill, project_id], one=True)
+
+        if existing:
+            return jsonify({'success': False, 'error': 'You have already endorsed this skill in this project'})
+
+        # Add the endorsement with project_id
+        db.execute("""
+            INSERT INTO skill_endorsements (endorsed_user, endorser, skill, project_id)
+            VALUES (?, ?, ?, ?)
+        """, (endorsed_user, endorser, skill, project_id))
+        db.commit()
+
+        # Get the new count of endorsements for this skill in this project
+        new_count = query_db("""
+            SELECT COUNT(*) as count 
+            FROM skill_endorsements 
+            WHERE endorsed_user = ? AND skill = ? AND project_id = ?
+        """, [endorsed_user, skill, project_id], one=True)['count']
+
+        # Check if user qualifies for Skill Master badge (still based on total endorsements across all projects)
+        total_endorsements = query_db("""
+            SELECT COUNT(*) as count 
+            FROM skill_endorsements 
+            WHERE endorsed_user = ?
+        """, [endorsed_user], one=True)['count']
+
+        if total_endorsements >= BADGE_TYPES['skill_master']['requirement']:
+            award_badge(endorsed_user, 'skill_master')
+
+        return jsonify({'success': True, 'new_count': new_count})
+
+    except sqlite3.Error as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+def calculate_team_matching_score(user1, user2, hackathon_id):
+    """Calculate a matching score between two users for a hackathon."""
+    db = get_db()
+    
+    # Get user profiles
+    profile1 = query_db("SELECT skills, preferred_jobs FROM user_profiles WHERE username = ?", [user1], one=True)
+    profile2 = query_db("SELECT skills, preferred_jobs FROM user_profiles WHERE username = ?", [user2], one=True)
+    
+    if not profile1 or not profile2:
+        return 0.0
+    
+    score = 0.0
+    
+    # Compare skills
+    skills1 = set(s.strip().lower() for s in profile1['skills'].split(',')) if profile1['skills'] else set()
+    skills2 = set(s.strip().lower() for s in profile2['skills'].split(',')) if profile2['skills'] else set()
+    
+    # Calculate Jaccard similarity for skills
+    if skills1 and skills2:
+        skill_similarity = len(skills1.intersection(skills2)) / len(skills1.union(skills2))
+        score += skill_similarity * 0.6  # Skills are weighted at 60%
+    
+    # Compare preferred job types
+    jobs1 = set(j.strip().lower() for j in profile1['preferred_jobs'].split(',')) if profile1['preferred_jobs'] else set()
+    jobs2 = set(j.strip().lower() for j in profile2['preferred_jobs'].split(',')) if profile2['preferred_jobs'] else set()
+    
+    # Calculate complementary score for job preferences
+    if jobs1 and jobs2:
+        # Different job preferences are good (complementary skills)
+        job_complementarity = 1 - (len(jobs1.intersection(jobs2)) / max(len(jobs1), len(jobs2)))
+        score += job_complementarity * 0.4  # Job complementarity is weighted at 40%
+    
+    return min(1.0, score)
+
+@app.route('/calculate_team_matches/<int:hackathon_id>', methods=['POST'])
+def calculate_team_matches(hackathon_id):
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Please log in to calculate team matches'})
+    
+    db = get_db()
+    try:
+        # First, clear existing matches for this hackathon
+        db.execute("""
+            DELETE FROM team_matching_scores 
+            WHERE hackathon_id = ?
+        """, [hackathon_id])
+        
+        # Get all participants for this hackathon
+        participants = query_db("""
+            SELECT username FROM participants 
+            WHERE hackathon_id = ?
+        """, [hackathon_id])
+        
+        if not participants:
+            return jsonify({'success': False, 'error': 'No participants found'})
+        
+        # Calculate scores for all pairs
+        for i, p1 in enumerate(participants):
+            for p2 in participants[i+1:]:
+                score = calculate_team_matching_score(p1['username'], p2['username'], hackathon_id)
+                
+                # Store the score
+                db.execute("""
+                    INSERT INTO team_matching_scores (hackathon_id, user1, user2, match_score)
+                    VALUES (?, ?, ?, ?)
+                """, (hackathon_id, p1['username'], p2['username'], score))
+        
+        db.commit()
+        return jsonify({'success': True, 'message': 'Team matching scores calculated successfully'})
+        
+    except sqlite3.Error as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/get_team_matches/<int:hackathon_id>/<username>')
+def get_team_matches(hackathon_id, username):
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Please log in to view team matches'})
+    
+    try:
+        matches = query_db("""
+            SELECT 
+                CASE 
+                    WHEN user1 = ? THEN user2 
+                    ELSE user1 
+                END as matched_user,
+                match_score,
+                calculated_at
+            FROM team_matching_scores 
+            WHERE hackathon_id = ? AND (user1 = ? OR user2 = ?)
+            ORDER BY match_score DESC
+        """, [username, hackathon_id, username, username])
+        
+        # Get user details and connection status for each match
+        detailed_matches = []
+        for match in matches:
+            # Get user details
+            user_details = query_db("""
+                SELECT u.username, u.email, up.skills, up.preferred_jobs 
+                FROM users u 
+                LEFT JOIN user_profiles up ON u.username = up.username 
+                WHERE u.username = ?
+            """, [match['matched_user']], one=True)
+            
+            # Check connection status
+            connection = query_db("""
+                SELECT status 
+                FROM connections 
+                WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)
+                AND status = 'accepted'
+            """, [username, match['matched_user'], match['matched_user'], username], one=True)
+            
+            detailed_matches.append({
+                'username': user_details['username'],
+                'email': user_details['email'],
+                'skills': user_details['skills'],
+                'preferred_jobs': user_details['preferred_jobs'],
+                'match_score': round(match['match_score'] * 100, 1),  # Convert to percentage
+                'calculated_at': match['calculated_at'],
+                'is_connected': bool(connection)  # True if they are already connected
+            })
+        
+        return jsonify({'success': True, 'matches': detailed_matches})
+        
+    except sqlite3.Error as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/leave_hackathon/<int:hackathon_id>', methods=['POST'])
+def leave_hackathon(hackathon_id):
+    if 'username' not in session:
+        return jsonify({'success': False, 'error': 'Please log in to leave hackathons'})
+
+    username = session['username']
+    db = get_db()
+
+    try:
+        # Check if user is in the hackathon
+        participant = query_db("""
+            SELECT id FROM participants 
+            WHERE hackathon_id = ? AND username = ?
+        """, [hackathon_id, username], one=True)
+
+        if not participant:
+            return jsonify({'success': False, 'error': 'You are not a participant in this hackathon'})
+
+        # Remove the participant
+        db.execute("""
+            DELETE FROM participants 
+            WHERE hackathon_id = ? AND username = ?
+        """, (hackathon_id, username))
+
+        # Remove any team matching scores
+        db.execute("""
+            DELETE FROM team_matching_scores 
+            WHERE hackathon_id = ? AND (user1 = ? OR user2 = ?)
+        """, (hackathon_id, username, username))
+
+        db.commit()
+        return jsonify({'success': True})
+
+    except sqlite3.Error as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

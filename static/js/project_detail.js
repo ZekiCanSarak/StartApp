@@ -29,24 +29,26 @@ document.addEventListener('click', (e) => {
 });
 
 // Skill Endorsement
-function endorseSkill(username, skill) {
+function endorseSkill(username, skill, button) {
+    const projectId = document.querySelector('[data-project-id]').dataset.projectId;
+    
     fetch('/endorse_skill', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `username=${encodeURIComponent(username)}&skill=${encodeURIComponent(skill)}`
+        body: `username=${encodeURIComponent(username)}&skill=${encodeURIComponent(skill)}&project_id=${encodeURIComponent(projectId)}`
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update the endorsement count in the UI
-            const skillChips = document.querySelectorAll('.skill-chip');
-            skillChips.forEach(chip => {
-                if (chip.querySelector('span').textContent === skill) {
-                    chip.querySelector('.endorsement-count').textContent = data.new_count;
-                }
-            });
+            // Update the endorsement count
+            const countSpan = button.nextElementSibling;
+            countSpan.textContent = data.new_count;
+            
+            // Disable the button
+            button.disabled = true;
+            button.classList.add('endorsed');
         } else {
             alert(data.error || 'Failed to endorse skill');
         }
@@ -84,11 +86,17 @@ document.getElementById('updateForm').addEventListener('submit', function(e) {
 // GitHub Integration
 if (document.querySelector('.github-section')) {
     const repoUrl = document.querySelector('.github-link').href;
-    const [owner, repo] = repoUrl.split('github.com/')[1].split('/');
+    // Remove .git from the end of the URL if present and get owner/repo
+    const [owner, repo] = repoUrl.split('github.com/')[1].replace('.git', '').split('/');
     
     // Fetch Issues
     fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=open`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(issues => {
             const issuesList = document.getElementById('issuesList');
             issuesList.innerHTML = issues.length ? issues.map(issue => `
@@ -114,24 +122,34 @@ if (document.querySelector('.github-section')) {
 
     // Fetch Commits
     fetch(`https://api.github.com/repos/${owner}/${repo}/commits`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(commits => {
             const commitsList = document.getElementById('commitsList');
-            commitsList.innerHTML = commits.length ? commits.slice(0, 5).map(commit => `
-                <div class="github-item">
-                    <a href="${commit.html_url}" target="_blank" class="github-link">
-                        <span class="commit-message">${commit.commit.message}</span>
-                    </a>
-                    <div class="commit-meta">
-                        <span class="commit-author">
+            commitsList.innerHTML = commits.length ? commits.slice(0, 5).map(commit => {
+                // Get only the first line of the commit message
+                const shortMessage = commit.commit.message.split('\n')[0];
+                // Truncate message if it's too long
+                const truncatedMessage = shortMessage.length > 60 ? shortMessage.substring(0, 57) + '...' : shortMessage;
+                
+                return `
+                    <div class="commit-item">
+                        <div class="commit-header">
                             <img src="${commit.author?.avatar_url || 'https://github.com/identicons/jasonlong.png'}" 
-                                 alt="${commit.commit.author.name}" class="avatar-small">
-                            ${commit.commit.author.name}
-                        </span>
-                        <span class="commit-date">${new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                                 alt="${commit.commit.author.name}" class="avatar-tiny">
+                            <span class="commit-author">${commit.commit.author.name}</span>
+                            <span class="commit-date">${new Date(commit.commit.author.date).toLocaleDateString()}</span>
+                        </div>
+                        <a href="${commit.html_url}" target="_blank" class="commit-message" title="${commit.commit.message}">
+                            ${truncatedMessage}
+                        </a>
                     </div>
-                </div>
-            `).join('') : '<p>No commits found</p>';
+                `;
+            }).join('') : '<p>No commits found</p>';
         })
         .catch(error => {
             console.error('Error fetching commits:', error);

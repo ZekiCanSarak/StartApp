@@ -23,7 +23,7 @@
         </div>
     </header>
 
-    <div class="container">
+    <div class="container" data-project-id="{{ project.id }}">
         <aside class="sidebar">
             <ul>
                 <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
@@ -105,15 +105,17 @@
                             {% if member.skills_utilized %}
                             <div class="member-skills">
                                 {% for skill in member.skills_utilized.split(',') %}
-                                <div class="skill-chip">
-                                    <span>{{ skill }}</span>
-                                    <span class="endorsement-count">{{ member.skill_endorsements }}</span>
-                                    {% if session.username != member.username %}
-                                    <button onclick="endorseSkill('{{ member.username }}', '{{ skill }}')" class="endorse-btn">
-                                        <i class="fas fa-thumbs-up"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
+                                    {% set skill_trimmed = skill.strip() %}
+                                    <div class="skill-chip">
+                                        <span>{{ skill_trimmed }}</span>
+                                        <span class="endorsement-count">{{ member.skill_endorsements[skill_trimmed] }}</span>
+                                        {% if session.username != member.username %}
+                                            <button onclick="endorseSkill('{{ member.username }}', '{{ skill_trimmed }}', this)" 
+                                                    class="endorse-btn">
+                                                <i class="fas fa-thumbs-up"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
                                 {% endfor %}
                             </div>
                             {% endif %}

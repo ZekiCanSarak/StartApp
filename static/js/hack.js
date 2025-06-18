@@ -1,3 +1,6 @@
+// Get current user from the session
+const currentUser = document.querySelector('meta[name="username"]').content;
+
 // Add image preview functionality
 document.getElementById('image').addEventListener('change', function(e) {
     const preview = document.getElementById('current-image-preview');
@@ -112,66 +115,57 @@ function addHackathonToFeed(hackathon) {
            </div>`
         : '';
 
+    const newHtml = `
+        ${imageHtml}
+        <h3>${hackathon.title}</h3>
+        <p class="description">${hackathon.description}</p>
+        <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
+        <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
+        <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
+        ${hackathon.joined 
+            ? `<div class="team-matching-section">
+                   <button class="team-match-btn" onclick="viewTeamMatches('${hackathon.id}')">
+                       <i class="fas fa-users"></i> View Team Matches
+                   </button>
+               </div>`
+            : ''
+        }
+        <div class="button-group">
+            ${hackathon.joined 
+                ? `<button class="leave-btn" onclick="leaveHackathon('${hackathon.id}')">
+                       <i class="fas fa-sign-out-alt"></i> Leave Hackathon
+                   </button>`
+                : `<button class="join-btn" onclick="joinHackathon('${hackathon.id}')">
+                       <i class="fas fa-sign-in-alt"></i> Join Hackathon
+                   </button>`
+            }
+            ${hackathon.created_by === hackathon.current_user 
+                ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">
+                       <i class="fas fa-edit"></i> Edit
+                   </button>`
+                : ''}
+        </div>
+    `;
+
     if (hackathonElement) {
-        // Update existing hackathon post
-        hackathonElement.innerHTML = `
-            ${imageHtml}
-            <h3>${hackathon.title}</h3>
-            <p class="description">${hackathon.description}</p>
-            <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
-            <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
-            <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
-            <div class="button-group">
-                ${hackathon.joined 
-                    ? `<button class="join-hackathon-btn joined" disabled>
-                           <i class="fas fa-user-check"></i> Joined
-                       </button>
-                       <button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">
-                           <i class="fas fa-calendar-plus"></i> Add to Calendar
-                       </button>`
-                    : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">
-                           <i class="fas fa-user-plus"></i> Join
-                       </button>`
-                }
-                ${hackathon.created_by === hackathon.current_user 
-                    ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">
-                           <i class="fas fa-edit"></i> Edit
-                       </button>`
-                    : ''}
-            </div>
-        `;
+        // Preserve existing classes
+        const existingClasses = Array.from(hackathonElement.classList);
+        hackathonElement.innerHTML = newHtml;
+        // Re-add all classes that were previously on the element
+        existingClasses.forEach(className => {
+            if (!hackathonElement.classList.contains(className)) {
+                hackathonElement.classList.add(className);
+            }
+        });
     } else {
         // Create new hackathon post
         hackathonElement = document.createElement('div');
         hackathonElement.classList.add('hackathon-post');
+        if (hackathon.category === 'expired') {
+            hackathonElement.classList.add('expired');
+        }
         hackathonElement.setAttribute('data-id', hackathonIdStr);
-
-        hackathonElement.innerHTML = `
-            ${imageHtml}
-            <h3>${hackathon.title}</h3>
-            <p class="description">${hackathon.description}</p>
-            <p class="date"><strong>Date:</strong> ${hackathon.date}</p>
-            <p class="location"><strong>Location:</strong> ${hackathon.location}</p>
-            <p class="participants-info"><strong>Participants:</strong> ${hackathon.current_participants} / ${hackathon.max_participants}</p>
-            <div class="button-group">
-                ${hackathon.joined 
-                    ? `<button class="join-hackathon-btn joined" disabled>
-                           <i class="fas fa-user-check"></i> Joined
-                       </button>
-                       <button onclick="location.href='/add_to_google_calendar/${hackathon.id}'" class="calendar-btn">
-                           <i class="fas fa-calendar-plus"></i> Add to Calendar
-                       </button>`
-                    : `<button class="join-hackathon-btn" data-id="${hackathon.id}" onclick="joinHackathon('${hackathon.id}')">
-                           <i class="fas fa-user-plus"></i> Join
-                       </button>`
-                }
-                ${hackathon.created_by === hackathon.current_user 
-                    ? `<button class="edit-hackathon-btn" onclick="editHackathon('${hackathon.id}')">
-                           <i class="fas fa-edit"></i> Edit
-                       </button>`
-                    : ''}
-            </div>
-        `;
+        hackathonElement.innerHTML = newHtml;
 
         const targetSection = hackathon.category === 'matching' ? '#personalised-hackathons'
                             : hackathon.category === 'other' ? '#other-hackathons'
@@ -186,58 +180,95 @@ function addHackathonToFeed(hackathon) {
             }
         }
     }
-
-    closeForm();
 }
 
-function joinHackathon(id) {
-    const hackathonElement = document.querySelector(`.hackathon-post[data-id="${id}"]`);
-    const participantsInfo = hackathonElement.querySelector('.participants-info').textContent;
-    
-    // Extracting current and max participants from the text
-    const [currentParticipants, maxParticipants] = participantsInfo.match(/\d+/g).map(Number);
-    
-    // Checking if the hackathon is already full
-    if (currentParticipants >= maxParticipants) {
-        alert("Max limit reached. You cannot join this hackathon.");
-        return;
-    }
+function joinHackathon(hackathonId) {
+    fetch('/join_hackathon', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: hackathonId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the button instantly
+            const hackathonCard = document.querySelector(`.hackathon-post[data-id="${hackathonId}"]`);
+            const buttonGroup = hackathonCard.querySelector('.button-group');
+            const participantsInfo = hackathonCard.querySelector('.participants-info');
+            
+            // Update participants count
+            const [current, max] = participantsInfo.textContent.match(/\d+/g);
+            participantsInfo.innerHTML = `<strong>Participants:</strong> ${parseInt(current) + 1} / ${max}`;
+            
+            // Update button to Leave
+            buttonGroup.innerHTML = `
+                <button class="leave-btn" onclick="leaveHackathon('${hackathonId}')">
+                    <i class="fas fa-sign-out-alt"></i> Leave Hackathon
+                </button>
+            `;
 
-    // Goes to send the join request if the hackathon is not full
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/join_hackathon", true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            console.log("Join Hackathon Response:", response);
-
-            if (response.success) {
-                // Updating participants info
-                let participantsElement = hackathonElement.querySelector('.participants-info');
-                participantsElement.textContent = `Participants: ${response.current_participants} / ${response.max_participants}`;
-                
-                // Updating the join button to 'Joined' and disable it
-                const joinButton = hackathonElement.querySelector('.join-hackathon-btn');
-                if (joinButton) {
-                    joinButton.textContent = "Joined";
-                    joinButton.disabled = true;
-                    joinButton.classList.add("joined");
-                }
-
-                // Adding calendar button if applicable
-                const calendarButton = document.createElement("button");
-                calendarButton.classList.add("calendar-btn");
-                calendarButton.textContent = "Add to Calendar";
-                calendarButton.onclick = () => location.href = `/add_to_google_calendar/${id}`;
-                hackathonElement.appendChild(calendarButton);
-
-            } else {
-                alert("Failed to join hackathon: " + (response.message || "Unknown error"));
+            // Add team matching section
+            if (!hackathonCard.querySelector('.team-matching-section')) {
+                const teamMatchingSection = document.createElement('div');
+                teamMatchingSection.className = 'team-matching-section';
+                teamMatchingSection.innerHTML = `
+                    <button class="team-match-btn" onclick="viewTeamMatches('${hackathonId}')">
+                        <i class="fas fa-users"></i> View Team Matches
+                    </button>
+                `;
+                buttonGroup.parentNode.insertBefore(teamMatchingSection, buttonGroup);
             }
+        } else {
+            alert(data.message || 'Failed to join hackathon');
         }
-    };
-    xhr.send(JSON.stringify({ id: id }));
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to join hackathon');
+    });
+}
+
+function leaveHackathon(hackathonId) {
+    fetch(`/leave_hackathon/${hackathonId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the button instantly
+            const hackathonCard = document.querySelector(`.hackathon-post[data-id="${hackathonId}"]`);
+            const buttonGroup = hackathonCard.querySelector('.button-group');
+            const participantsInfo = hackathonCard.querySelector('.participants-info');
+            const teamMatchingSection = hackathonCard.querySelector('.team-matching-section');
+            
+            // Update participants count
+            const [current, max] = participantsInfo.textContent.match(/\d+/g);
+            participantsInfo.innerHTML = `<strong>Participants:</strong> ${parseInt(current) - 1} / ${max}`;
+            
+            // Update button to Join
+            buttonGroup.innerHTML = `
+                <button class="join-btn" onclick="joinHackathon('${hackathonId}')">
+                    <i class="fas fa-sign-in-alt"></i> Join Hackathon
+                </button>
+            `;
+
+            // Remove team matching section
+            if (teamMatchingSection) {
+                teamMatchingSection.remove();
+            }
+        } else {
+            alert(data.error || 'Failed to leave hackathon');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to leave hackathon');
+    });
 }
 
 function editHackathon(hackathonId) {
@@ -354,4 +385,149 @@ function addHackathonToSidebar(hackathon) {
     const newHackathon = document.createElement("li");
     newHackathon.innerHTML = `<a href="/hackathon/${hackathon.id}/updates"><i class="fas fa-bell"></i> ${hackathon.title}</a>`;
     sidebar.appendChild(newHackathon);
+}
+
+function viewTeamMatches(hackathonId) {
+    // First calculate/update team matches
+    fetch(`/calculate_team_matches/${hackathonId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Now fetch the matches
+            return fetch(`/get_team_matches/${hackathonId}/${currentUser}`);
+        } else {
+            throw new Error(data.error || 'Failed to calculate team matches');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showTeamMatchesModal(data.matches);
+        } else {
+            throw new Error(data.error || 'Failed to get team matches');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message);
+    });
+}
+
+function showTeamMatchesModal(matches) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('teamMatchesModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modalHtml = `
+        <div class="modal" id="teamMatchesModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-users"></i> Team Matches</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    ${matches.length > 0 ? `
+                        <div class="matches-list">
+                            ${matches.map(match => `
+                                <div class="match-card">
+                                    <div class="match-info">
+                                        <div class="match-header">
+                                            <h3>${match.username}</h3>
+                                            <span class="match-score">
+                                                <i class="fas fa-percentage"></i> ${match.match_score}% Match
+                                            </span>
+                                        </div>
+                                        <div class="match-details">
+                                            ${match.skills ? `
+                                                <p class="skills">
+                                                    <i class="fas fa-tools"></i> <strong>Skills:</strong> 
+                                                    ${match.skills.split(',').map(skill => 
+                                                        `<span class="skill-tag">${skill.trim()}</span>`
+                                                    ).join('')}
+                                                </p>
+                                            ` : ''}
+                                            ${match.preferred_jobs ? `
+                                                <p class="preferred-jobs">
+                                                    <i class="fas fa-briefcase"></i> <strong>Preferred Roles:</strong> 
+                                                    ${match.preferred_jobs.split(',').map(job => 
+                                                        `<span class="role-tag">${job.trim()}</span>`
+                                                    ).join('')}
+                                                </p>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="match-actions">
+                                        <button onclick="window.location.href='/messages/${match.username}'" class="message-btn">
+                                            <i class="fas fa-comment"></i> Message
+                                        </button>
+                                        ${match.is_connected ? `
+                                            <button class="connect-btn connected" disabled>
+                                                <i class="fas fa-check"></i> Connected
+                                            </button>
+                                        ` : `
+                                            <button onclick="sendConnectionRequest('${match.username}')" class="connect-btn">
+                                                <i class="fas fa-user-plus"></i> Connect
+                                            </button>
+                                        `}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="no-matches">No team matches found. Try joining more hackathons!</p>'}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to the page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('teamMatchesModal');
+    const closeBtn = modal.querySelector('.close');
+
+    modal.style.display = 'block';
+
+    // Close modal when clicking the X
+    closeBtn.onclick = function() {
+        modal.remove();
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.remove();
+        }
+    }
+}
+
+function sendConnectionRequest(username) {
+    fetch('/send_connection_request', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username: username })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const connectBtn = document.querySelector(`button[onclick="sendConnectionRequest('${username}')"]`);
+            connectBtn.disabled = true;
+            connectBtn.innerHTML = '<i class="fas fa-check"></i> Request Sent';
+            connectBtn.classList.add('sent');
+        } else {
+            alert(data.message || 'Failed to send connection request');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to send connection request');
+    });
 }

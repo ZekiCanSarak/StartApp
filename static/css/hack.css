@@ -552,3 +552,256 @@ button:hover {
     flex-direction: column;
     align-items: center;
 }
+
+/* Team Matching Styles */
+.team-matching-section {
+    margin: 1rem 0;
+}
+
+.team-match-btn {
+    background-color: #1E88E5;  /* Brighter Material Design blue */
+    color: white;
+    border: none;
+    padding: 1rem 2rem;  /* Even larger padding */
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 1.1rem;  /* Larger font */
+    transition: all 0.3s ease;
+    width: 100%;
+    justify-content: center;
+    margin: 1.5rem 0;  /* More margin */
+    box-shadow: 0 4px 6px rgba(30, 136, 229, 0.4);  /* More prominent shadow */
+    text-transform: uppercase;  /* Make it stand out more */
+    letter-spacing: 0.5px;  /* Better text readability */
+}
+
+.team-match-btn:hover {
+    background-color: #1565C0;  /* Darker blue on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(30, 136, 229, 0.5);
+}
+
+.team-match-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.4);
+}
+
+.team-match-btn i {
+    font-size: 1.2rem;
+    color: #fff;  /* Ensure icon is white */
+}
+
+/* Team Matches Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    width: 80%;
+    max-width: 800px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #1E88E5;
+}
+
+.modal-header h2 i {
+    font-size: 1.5rem;
+}
+
+.close {
+    color: #aaa;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: var(--primary-color);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.matches-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.match-card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.match-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.match-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.match-header h3 {
+    margin: 0;
+    color: #1E88E5;
+    font-size: 1.25rem;
+}
+
+.match-score {
+    background-color: #E3F2FD;
+    color: #1565C0;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.match-details {
+    margin: 1rem 0;
+}
+
+.match-details p {
+    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.match-details i {
+    color: #1E88E5;
+}
+
+.skill-tag, .role-tag {
+    background-color: #E3F2FD;
+    color: #1565C0;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.875rem;
+    margin: 0.25rem;
+}
+
+.match-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;  /* Two equal columns for two buttons */
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.match-actions button {
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;  /* Full width within grid cell */
+}
+
+.view-profile-btn {
+    background-color: #E3F2FD;
+    color: #1565C0;
+}
+
+.view-profile-btn:hover {
+    background-color: #BBDEFB;
+}
+
+.message-btn {
+    background-color: #1E88E5;
+    color: white;
+}
+
+.message-btn:hover {
+    background-color: #1565C0;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.3);
+}
+
+.connect-btn {
+    background-color: #2E7D32;
+    color: white;
+}
+
+.connect-btn:hover {
+    background-color: #1B5E20;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(46, 125, 50, 0.3);
+}
+
+.connect-btn.sent {
+    background-color: #9E9E9E;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.connect-btn.connected {
+    background-color: #66BB6A;  /* Lighter green to indicate success */
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.9;
+}
+
+.connect-btn.connected:hover {
+    background-color: #66BB6A;
+    transform: none;
+    box-shadow: none;
+}
+
+.connect-btn.connected i {
+    color: #E8F5E9;  /* Light green color for the checkmark */
+}
+
+.no-matches {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+    font-size: 1.1rem;
+}

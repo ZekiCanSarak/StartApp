@@ -43,7 +43,7 @@
 
         <main class="main-content">
             <div class="profile-header">
-                <h2>Your Profile</h2>
+            <h2>Your Profile</h2>
             </div>
 
             <form id="profileForm" method="POST" autocomplete="off">
@@ -82,15 +82,15 @@
 
                 {% if is_own_profile %}
                 <div class="button-group">
-                    <button type="button" id="editButton" onclick="enableEdit()">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
+                <button type="button" id="editButton" onclick="enableEdit()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
                     <button type="submit" id="saveButton" style="display: none;">
-                        <i class="fas fa-save"></i> Save
-                    </button>
-                    <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">
                         <i class="fas fa-times"></i> Cancel
-                    </button>
+                </button>
                 </div>
                 {% endif %}
             </form>

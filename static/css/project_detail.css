@@ -357,6 +357,9 @@ body {
     color: var(--primary-dark);
     padding: 0.125rem 0.375rem;
     border-radius: 8px;
+    margin-left: 0.25rem;
+    min-width: 1.5rem;
+    text-align: center;
 }
 
 .endorse-btn {
@@ -370,6 +373,20 @@ body {
 
 .endorse-btn:hover {
     color: var(--primary-dark);
+}
+
+.endorse-btn.endorsed {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.skills-section {
+    margin-top: 12px;
+}
+
+.skills-section h4 {
+    margin-bottom: 8px;
+    color: #333;
 }
 
 /* Updates Section Styles */
@@ -479,10 +496,11 @@ body {
 
 /* GitHub Section Styles */
 .github-section {
-    background-color: white;
-    padding: 2rem;
+    margin-top: 2rem;
+    background: white;
+    padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .github-section h3 {
@@ -492,14 +510,104 @@ body {
 
 .github-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
+    margin-top: 1rem;
 }
 
-.github-issues h4,
-.github-commits h4 {
-    margin-bottom: 1rem;
-    color: var(--text-color);
+.commit-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.commit-item:last-child {
+    border-bottom: none;
+}
+
+.commit-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.avatar-tiny {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.commit-author {
+    font-weight: 600;
+    color: #444;
+}
+
+.commit-date {
+    color: #666;
+    font-size: 0.8rem;
+    margin-left: auto;
+}
+
+.commit-message {
+    display: block;
+    color: #555;
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin-left: 2rem;
+    line-height: 1.4;
+}
+
+.commit-message:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+/* Issues styling */
+.github-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.github-item:last-child {
+    border-bottom: none;
+}
+
+.issue-title {
+    font-weight: 600;
+    color: #444;
+    margin-right: 0.5rem;
+}
+
+.issue-number {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.issue-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.issue-author {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #444;
+}
+
+.issue-date {
+    color: #666;
+    margin-left: auto;
 }
 
 .loading {

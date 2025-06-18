@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="username" content="{{ session.username }}">
     <title>Hackathons</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/hack.css') }}">
     <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
@@ -72,15 +73,23 @@
                             <p><strong>Date:</strong> {{ hackathon.date }}</p>
                             <p><strong>Location:</strong> {{ hackathon.location }}</p>
                             <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
+                            
+                            {% if hackathon.joined %}
+                            <div class="team-matching-section">
+                                <button class="team-match-btn" onclick="viewTeamMatches('{{ hackathon.id }}')">
+                                    <i class="fas fa-users"></i> View Team Matches
+                                </button>
+                            </div>
+                            {% endif %}
+
                             <div class="button-group">
                                 {% if hackathon.joined == 1 %}
-                                    <button class="join-hackathon-btn joined" disabled>Joined</button>
-                                    <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
-                                        <i class="fas fa-calendar-plus"></i> Add to Calendar
+                                    <button class="leave-btn" onclick="leaveHackathon('{{ hackathon.id }}')">
+                                        <i class="fas fa-sign-out-alt"></i> Leave Hackathon
                                     </button>
                                 {% else %}
-                                    <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
-                                        <i class="fas fa-user-plus"></i> Join
+                                    <button class="join-btn" onclick="joinHackathon('{{ hackathon.id }}')">
+                                        <i class="fas fa-sign-in-alt"></i> Join Hackathon
                                     </button>
                                 {% endif %}
                                 {% if session.get('username') == hackathon.created_by %}
@@ -112,15 +121,23 @@
                         <p><strong>Date:</strong> {{ hackathon.date }}</p>
                         <p><strong>Location:</strong> {{ hackathon.location }}</p>
                         <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
+                        
+                        {% if hackathon.joined %}
+                        <div class="team-matching-section">
+                            <button class="team-match-btn" onclick="viewTeamMatches('{{ hackathon.id }}')">
+                                <i class="fas fa-users"></i> View Team Matches
+                            </button>
+                        </div>
+                        {% endif %}
+
                         <div class="button-group">
                             {% if hackathon.joined == 1 %}
-                                <button class="join-hackathon-btn joined" disabled>Joined</button>
-                                <button onclick="location.href='/add_to_google_calendar/{{ hackathon.id }}'" class="calendar-btn">
-                                    <i class="fas fa-calendar-plus"></i> Add to Calendar
+                                <button class="leave-btn" onclick="leaveHackathon('{{ hackathon.id }}')">
+                                    <i class="fas fa-sign-out-alt"></i> Leave Hackathon
                                 </button>
                             {% else %}
-                                <button class="join-hackathon-btn" data-id="{{ hackathon.id }}" onclick="joinHackathon('{{ hackathon.id }}')">
-                                    <i class="fas fa-user-plus"></i> Join
+                                <button class="join-btn" onclick="joinHackathon('{{ hackathon.id }}')">
+                                    <i class="fas fa-sign-in-alt"></i> Join Hackathon
                                 </button>
                             {% endif %}
                             {% if session.get('username') == hackathon.created_by %}

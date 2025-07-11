@@ -10,7 +10,7 @@ import json
 
 def init_db():
     """Initialize the database."""
-    db = sqlite3.connect('database.sqlite')
+    db = sqlite3.connect('/home/root/app_data/database.sqlite')
     db.row_factory = sqlite3.Row
     
     # Create users table if it doesn't exist

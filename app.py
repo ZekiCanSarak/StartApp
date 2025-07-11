@@ -137,7 +137,7 @@ def init_db():
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(
-            'database.sqlite',
+            '/home/root/app_data/database.sqlite',
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.row_factory = sqlite3.Row
@@ -145,7 +145,7 @@ def get_db():
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
-app.config['DATABASE'] = 'database.sqlite'
+app.config['DATABASE'] = '/home/root/app_data/database.sqlite'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 

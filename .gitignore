@@ -4,3 +4,6 @@ venv/
 *.sqlite
 
 database.sqlite
+
+# User-uploaded files (hackathon images)
+static/uploads/

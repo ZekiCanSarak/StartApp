@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block head %}{% endblock %}
+    <title>{% block title %}Home{% endblock %} · StartApp</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    {% block styles %}{% endblock %}
+    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
+</head>
+<body {% block body_attrs %}{% endblock %}>
+{% block body %}
+<div class="app">
+    <aside class="sidebar" id="sidebar" data-unread-url="{{ url_for('get_unread_count', username=session.username) }}">
+        <a href="/" class="sidebar-brand">
+            <span class="brand-mark"><i class="fas fa-rocket"></i></span>
+            <span class="brand-name">StartApp</span>
+        </a>
+
+        <nav class="sidebar-scroll" aria-label="Main">
+            <div class="nav-label">Workspace</div>
+            <ul class="nav-list">
+                <li><a href="/" class="{{ 'active' if active_page == 'home' }}"><i class="fas fa-briefcase"></i> Opportunities</a></li>
+                <li><a href="/hack" class="{{ 'active' if active_page == 'hack' }}"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
+                <li><a href="/projects" class="{{ 'active' if active_page == 'projects' }}"><i class="fas fa-project-diagram"></i> Projects</a></li>
+            </ul>
+
+            <div class="nav-label">Network</div>
+            <ul class="nav-list">
+                <li><a href="/search_users" class="{{ 'active' if active_page == 'search' }}"><i class="fas fa-search"></i> Find People</a></li>
+                <li>
+                    <a href="/connections" class="{{ 'active' if active_page == 'connections' }}">
+                        <i class="fas fa-users"></i> Connections
+                        <span class="sidebar-notification" id="total-messages-count"></span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="nav-label">Learn</div>
+            <ul class="nav-list">
+                <li><a href="/resources" class="{{ 'active' if active_page == 'resources' }}"><i class="fas fa-book"></i> Resources</a></li>
+            </ul>
+
+            {% block sidebar_extra %}{% endblock %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-chip">
+                <a href="/profile" class="avatar avatar-sm" title="Your profile">{{ (session.username or '?')[:2] }}</a>
+                <a href="/profile" class="user-chip-meta">
+                    <span class="user-chip-name">{{ session.username }}</span>
+                    <span class="user-chip-role">{{ session.get('role') or 'Member' }}</span>
+                </a>
+                <a href="/logout" class="sidebar-logout" title="Log out" aria-label="Log out"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+        </div>
+    </aside>
+    <div class="sidebar-backdrop" data-nav-close></div>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="menu-toggle" type="button" data-nav-toggle aria-label="Open menu"><i class="fas fa-bars"></i></button>
+            <div class="breadcrumbs">
+                {% block breadcrumbs %}<span class="current">{{ self.title() }}</span>{% endblock %}
+            </div>
+            <div class="topbar-actions">
+                {% block topbar_actions %}
+                <a href="/profile" class="btn btn-ghost btn-sm {{ 'active' if active_page == 'profile' }}"><i class="fas fa-user"></i> Profile</a>
+                <a href="/logout" class="btn btn-secondary btn-sm"><i class="fas fa-sign-out-alt"></i> Log out</a>
+                {% endblock %}
+            </div>
+        </header>
+
+        {% include '_flash.html' %}
+
+        <main class="page {% block page_class %}{% endblock %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+{% block modals %}{% endblock %}
+{% endblock %}
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

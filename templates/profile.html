@@ -1,150 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - StartApp</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="fas fa-user"></i> Profile</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
+{% set active_page = 'profile' if is_own_profile else '' %}
 
-    <div class="container">
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile" class="active"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-                <li>
-                    <a href="/connections">
-                        <i class="fas fa-users"></i> Connections
-                        <span class="sidebar-notification" id="total-messages-count"></span>
-                    </a>
-                </li>
-                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
+{% block title %}{{ 'Your profile' if is_own_profile else user_details.username }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">{% endblock %}
 
-        <main class="main-content">
-            <div class="profile-header">
-            <h2>Your Profile</h2>
+{% block content %}
+<section class="profile-hero">
+    <div class="profile-hero-banner"></div>
+    <div class="profile-hero-body">
+        <div class="avatar avatar-xl profile-avatar">{{ user_details.username[:2] }}</div>
+        <div class="profile-identity">
+            <h1 class="page-title">{{ user_details.name or user_details.username }}</h1>
+            <div class="meta-row">
+                <span><i class="fas fa-at"></i> {{ user_details.username }}</span>
+                {% if user_details.school %}<span><i class="fas fa-university"></i> {{ user_details.school }}</span>{% endif %}
+                <span class="tag tag-accent">{{ (user_details.role or 'member')|title }}</span>
             </div>
-
-            <form id="profileForm" method="POST" autocomplete="off">
-                <div class="form-group">
-                    <label for="username"><i class="fas fa-user"></i> Username:</label>
-                    <input type="text" id="username" name="username" value="{{ user_details.username }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
-                    <input type="email" id="email" name="email" value="{{ user_details.email }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="name"><i class="fas fa-id-card"></i> Full Name:</label>
-                    <input type="text" id="name" name="name" value="{{ user_details.name or 'None' }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="age"><i class="fas fa-birthday-cake"></i> Age:</label>
-                    <input type="number" id="age" name="age" value="{{ user_details.age or 'None' }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="school"><i class="fas fa-school"></i> School/University:</label>
-                    <input type="text" id="school" name="school" value="{{ user_details.school or 'None' }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="skills"><i class="fas fa-tools"></i> Skills:</label>
-                    <input type="text" id="skills" name="skills" value="{{ user_details.skills or 'None' }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="hackathon"><i class="fas fa-laptop-code"></i> Hackathon Experience:</label>
-                    <input type="text" id="hackathon" name="hackathon" value="{{ user_details.hackathon or 'None' }}" disabled>
-                </div>
-                <div class="form-group">
-                    <label for="preferred_jobs"><i class="fas fa-briefcase"></i> Preferred Job Types:</label>
-                    <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details.preferred_jobs or 'None' }}" disabled>
-                </div>
-
-                {% if is_own_profile %}
-                <div class="button-group">
-                <button type="button" id="editButton" onclick="enableEdit()">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                    <button type="submit" id="saveButton" style="display: none;">
-                    <i class="fas fa-save"></i> Save
-                </button>
-                <button type="button" id="cancelButton" onclick="cancelEdit()" style="display: none;">
-                        <i class="fas fa-times"></i> Cancel
-                </button>
-                </div>
-                {% endif %}
-            </form>
-
-            <!-- Badges Section -->
-            <section class="badges-section">
-                <h3><i class="fas fa-award"></i> Achievements</h3>
-                <div class="badges-grid">
-                    {% for badge in badges %}
-                    <div class="badge-card">
-                        <div class="badge-icon">
-                            <i class="fas fa-award"></i>
-                        </div>
-                        <div class="badge-info">
-                            <h4>{{ badge.badge_name }}</h4>
-                            <span class="badge-date">Earned {{ badge.awarded_at }}</span>
-                        </div>
-                    </div>
-                    {% else %}
-                    <p class="no-badges">Start participating to earn badges!</p>
-                    {% endfor %}
-                </div>
-            </section>
-        </main>
+        </div>
+        <div class="profile-stats">
+            <div><strong>{{ badges|length }}</strong><span>Achievements</span></div>
+            <div><strong>{{ (user_details.skills.split(',')|length) if user_details.skills else 0 }}</strong><span>Skills</span></div>
+        </div>
     </div>
+    {% if user_details.skills %}
+    <div class="profile-skills">
+        {% for skill in user_details.skills.split(',') if skill.strip() %}
+            <span class="tag tag-primary">{{ skill.strip() }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
 
-    <script>
-    async function updateTotalUnreadCount() {
-        try {
-            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
-            const data = await response.json();
-            
-            if (response.ok) {
-                const badge = document.getElementById('total-messages-count');
-                const count = data.count;
-                
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.add('active');
-                } else {
-                    badge.textContent = '';
-                    badge.classList.remove('active');
-                }
-            }
-        } catch (error) {
-            console.error('Error updating total unread count:', error);
-        }
-    }
+<div class="profile-layout">
+    <form id="profileForm" class="card" method="POST" autocomplete="off">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-id-card"></i> Profile details</h2>
+            {% if is_own_profile %}
+            <div class="button-group">
+                <button type="button" id="editButton" class="btn btn-secondary btn-sm" onclick="enableEdit()">
+                    <i class="fas fa-pen"></i> Edit profile
+                </button>
+                <button type="button" id="cancelButton" class="btn btn-ghost btn-sm" onclick="cancelEdit()" style="display: none;">
+                    Cancel
+                </button>
+                <button type="submit" id="saveButton" class="btn btn-primary btn-sm" style="display: none;">
+                    <i class="fas fa-check"></i> Save changes
+                </button>
+            </div>
+            {% endif %}
+        </div>
 
-    // Update total unread count every 10 seconds
-    updateTotalUnreadCount();
-    setInterval(updateTotalUnreadCount, 10000);
-    </script>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="username" name="username" value="{{ user_details.username }}" disabled>
+            </div>
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="email" name="email" value="{{ user_details.email }}" disabled>
+            </div>
+            <div class="form-group">
+                <label for="name"><i class="fas fa-signature"></i> Full name</label>
+                <input type="text" id="name" name="name" value="{{ user_details.name or '' }}" placeholder="Not set" disabled>
+            </div>
+            <div class="form-group">
+                <label for="age"><i class="fas fa-birthday-cake"></i> Age</label>
+                <input type="number" id="age" name="age" value="{{ user_details.age or '' }}" placeholder="Not set" disabled>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="school"><i class="fas fa-university"></i> School / University</label>
+            <input type="text" id="school" name="school" value="{{ user_details.school or '' }}" placeholder="Not set" disabled>
+        </div>
+        <div class="form-group">
+            <label for="skills"><i class="fas fa-tools"></i> Skills</label>
+            <input type="text" id="skills" name="skills" value="{{ user_details.skills or '' }}" placeholder="e.g. Python, React, UI Design" disabled>
+            <p class="field-hint">Comma-separated. Used for team matching and project skill endorsements.</p>
+        </div>
+        <div class="form-group">
+            <label for="hackathon"><i class="fas fa-laptop-code"></i> Hackathon experience</label>
+            <input type="text" id="hackathon" name="hackathon" value="{{ user_details.hackathon or '' }}" placeholder="Not set" disabled>
+        </div>
+        <div class="form-group">
+            <label for="preferred_jobs"><i class="fas fa-briefcase"></i> Preferred job types</label>
+            <input type="text" id="preferred_jobs" name="preferred_jobs" value="{{ user_details.preferred_jobs or '' }}" placeholder="e.g. Frontend, Data, Design" disabled>
+            <p class="field-hint">Comma-separated. Powers your recommended opportunities.</p>
+        </div>
+    </form>
 
-    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
-</body>
-</html>
+    <section class="card badges-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-award"></i> Achievements</h2>
+            <span class="count-pill">{{ badges|length }}</span>
+        </div>
+        <div class="badges-grid">
+            {% for badge in badges %}
+            <div class="badge-card">
+                <div class="badge-icon"><i class="fas fa-award"></i></div>
+                <div class="badge-info">
+                    <h4>{{ badge.badge_name }}</h4>
+                    <span class="badge-date">Earned {{ badge.awarded_at }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-medal"></i></div>
+                <h4>No achievements yet</h4>
+                <p>Join hackathons and contribute to projects to start earning badges.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

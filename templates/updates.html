@@ -1,45 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ hackathon.title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/updates.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-</head>
-<body>
-    <header>
-        <h1>{{ hackathon.title }}</h1>
-        <p><strong>Date:</strong> {{ hackathon.date }}</p>
-        <p><strong>Location:</strong> {{ hackathon.location }}</p>
-        <p>{{ hackathon.description }}</p>
+{% extends 'base.html' %}
+{% set active_page = 'hack' %}
 
-        <button onclick="goBack()" class="back-button">
-            <i class="fas fa-arrow-left"></i> Back to Hackathons
-        </button>
+{% block title %}{{ hackathon.title }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/updates.css') }}">{% endblock %}
 
-    </header>
+{% block breadcrumbs %}
+<a href="/hack">Hackathons</a>
+<i class="fas fa-chevron-right sep"></i>
+<span class="current">{{ hackathon.title }}</span>
+{% endblock %}
 
-    <section>
-        <h2>Live Updates</h2>
-        <div id="updates-container">
-            <ul id="updates-list">
-                {% for update in updates %}
-                <li><strong>{{ update.created_at }}</strong>: {{ update.content }}</li>
-                {% endfor %}
-            </ul>
+{% block content %}
+<section class="event-hero">
+    <button onclick="goBack()" class="btn btn-outline-light btn-sm back-button">
+        <i class="fas fa-arrow-left"></i> All hackathons
+    </button>
+    <span class="eyebrow eyebrow-light"><i class="fas fa-circle live-dot"></i> Live event</span>
+    <h1 class="event-title">{{ hackathon.title }}</h1>
+    <p class="event-description">{{ hackathon.description }}</p>
+    <div class="event-meta">
+        <span><i class="fas fa-calendar"></i> {{ hackathon.date }}</span>
+        <span><i class="fas fa-map-marker-alt"></i> {{ hackathon.location }}</span>
+    </div>
+</section>
+
+<div class="updates-layout">
+    <section class="card">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-stream"></i> Live updates</h2>
         </div>
-        
-        {% if session.get('role') == 'organiser' and hackathon.created_by == session.get('username') %}
-            <form id="add-update-form">
-                <textarea name="content" id="update-content" placeholder="Post an update..." required></textarea>
-                <input type="hidden" name="hackathon_id" id="hackathon-id" value="{{ hackathon.id }}">
-                <button type="submit">Post Update</button>
-            </form>
-        {% endif %}
+        <div id="updates-container">
+            {#- Kept free of whitespace so CSS :empty can toggle the empty state when JS adds items. -#}
+            <ul id="updates-list">{% for update in updates %}<li><strong>{{ update.created_at }}</strong> {{ update.content }}</li>{% endfor %}</ul>
+            <div class="empty-state updates-empty">
+                <div class="empty-state-icon"><i class="fas fa-bullhorn"></i></div>
+                <h4>No updates yet</h4>
+                <p>Announcements from the organiser will appear here in real time.</p>
+            </div>
+        </div>
     </section>
 
-    <script src="{{ url_for('static', filename='js/updates.js') }}"></script>
-</body>
-</html>
+    {% if session.get('role') == 'organiser' and hackathon.created_by == session.get('username') %}
+    <aside class="card composer">
+        <h2 class="section-title"><i class="fas fa-bullhorn"></i> Post an update</h2>
+        <p class="muted composer-hint">Participants see this instantly on their live feed.</p>
+        <form id="add-update-form">
+            <div class="form-group">
+                <textarea name="content" id="update-content" placeholder="Share an announcement, schedule change or reminder…" required></textarea>
+            </div>
+            <input type="hidden" name="hackathon_id" id="hackathon-id" value="{{ hackathon.id }}">
+            <button type="submit" class="btn btn-primary btn-block">Publish update</button>
+        </form>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/updates.js') }}"></script>
+{% endblock %}

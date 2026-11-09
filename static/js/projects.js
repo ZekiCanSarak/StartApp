@@ -188,8 +188,8 @@ document.getElementById('editProjectForm').addEventListener('submit', function(e
 // Role chips interaction
 document.querySelectorAll('.role-chip').forEach(chip => {
     chip.addEventListener('click', (e) => {
-        // Don't trigger if clicking the checkbox directly
-        if (e.target.type !== 'checkbox') {
+        // Don't trigger if clicking the checkbox directly, or its label (the browser already toggles it)
+        if (e.target.type !== 'checkbox' && !e.target.closest('label')) {
             const checkbox = chip.querySelector('input[type="checkbox"]');
             checkbox.checked = !checkbox.checked;
         }
@@ -197,7 +197,7 @@ document.querySelectorAll('.role-chip').forEach(chip => {
 });
 
 // Form Validation
-document.querySelector('form').addEventListener('submit', (e) => {
+document.querySelector('#createProjectForm form').addEventListener('submit', (e) => {
     const title = document.getElementById('project-title').value.trim();
     const description = document.getElementById('project-description').value.trim();
     const githubRepo = document.getElementById('github-repo').value.trim();

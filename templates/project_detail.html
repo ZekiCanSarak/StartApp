@@ -1,250 +1,228 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ project.title }} - StartApp</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/project_detail.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="fas fa-project-diagram"></i> {{ project.title }}</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
+{% set active_page = 'projects' %}
 
-    <div class="container" data-project-id="{{ project.id }}">
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-                <li><a href="/connections"><i class="fas fa-users"></i> Connections</a></li>
-                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects" class="active"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
+{% block title %}{{ project.title }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/project_detail.css') }}">{% endblock %}
 
-        <main class="project-content">
-            <div class="project-header">
-                <div class="project-info">
-                    <h2>{{ project.title }}</h2>
-                    <p class="project-description">{{ project.description }}</p>
-                    <div class="project-meta">
-                        <span><i class="fas fa-users"></i> {{ project.member_count }} members</span>
-                        <span><i class="fas fa-clock"></i> {{ project.weekly_commitment }}h/week</span>
-                        {% if project.github_repo %}
-                        <a href="{{ project.github_repo }}" target="_blank" class="github-link">
-                            <i class="fab fa-github"></i> View Repository
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="project-actions">
-                    {% if is_admin %}
-                    <button onclick="showInviteModal()" class="invite-btn">
-                        <i class="fas fa-user-plus"></i> Invite Members
-                    </button>
-                    {% endif %}
-                    <a href="{{ url_for('task_board', project_id=project.id) }}" class="task-board-btn">
-                        <i class="fas fa-tasks"></i> Task Board
-                    </a>
-                </div>
+{% block breadcrumbs %}
+<a href="/projects">Projects</a>
+<i class="fas fa-chevron-right sep"></i>
+<span class="current">{{ project.title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container" data-project-id="{{ project.id }}">
+    <section class="project-hero project-header">
+        <div class="project-info">
+            <span class="eyebrow eyebrow-light">Project</span>
+            <h1 class="project-hero-title">{{ project.title }}</h1>
+            <p class="project-description">{{ project.description }}</p>
+            <div class="project-meta">
+                <span><i class="fas fa-users"></i> {{ project.member_count }} member{{ 's' if project.member_count != 1 }}</span>
+                <span><i class="fas fa-clock"></i> {{ project.weekly_commitment }}h / week</span>
+                {% if project.github_repo %}
+                <a href="{{ project.github_repo }}" target="_blank" rel="noopener" class="github-link">
+                    <i class="fab fa-github"></i> Repository
+                </a>
+                {% endif %}
             </div>
+        </div>
+        <div class="project-actions">
+            <a href="{{ url_for('task_board', project_id=project.id) }}" class="btn btn-accent task-board-btn">
+                <i class="fas fa-columns"></i> Task board
+            </a>
+            {% if is_admin %}
+            <button onclick="showInviteModal()" class="btn btn-outline-light invite-btn">
+                <i class="fas fa-user-plus"></i> Invite
+            </button>
+            {% endif %}
+        </div>
+    </section>
 
-            <div class="project-sections">
-                <!-- Team Members Section -->
-                <section class="team-section">
-                    <h3>Team Members</h3>
-                    <div class="team-grid">
-                        {% for member in members %}
-                        <div class="member-card">
-                            <div class="member-header">
-                                <img src="{{ member.email | gravatar }}" alt="{{ member.username }}" class="member-avatar">
-                                <div class="member-info">
-                                    <h4>{{ member.username }}</h4>
-                                    <span class="role-bubble {{ member.member_role }}">
-                                        {% if member.member_role == 'admin' %}
-                                            Admin
-                                        {% elif member.member_role == 'frontend' %}
-                                            Frontend Dev
-                                        {% elif member.member_role == 'backend' %}
-                                            Backend Dev
-                                        {% elif member.member_role == 'fullstack' %}
-                                            Full Stack
-                                        {% elif member.member_role == 'ui-ux' %}
-                                            UI/UX Designer
-                                        {% elif member.member_role == 'pm' %}
-                                            Project Manager
-                                        {% else %}
-                                            {{ member.member_role | title }}
-                                        {% endif %}
-                                    </span>
-                                </div>
+    <div class="project-layout project-sections">
+        <div class="project-main">
+            <!-- Team -->
+            <section class="card team-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-users"></i> Team <span class="count-pill">{{ members|length }}</span></h2>
+                </div>
+                <div class="team-grid">
+                    {% for member in members %}
+                    <div class="member-card">
+                        <div class="member-header">
+                            <img src="{{ member.email | gravatar }}" alt="{{ member.username }}" class="member-avatar">
+                            <div class="member-info">
+                                <h4>{{ member.username }}</h4>
+                                {% set role = member.member_role %}
+                                <span class="role-bubble {{ role }}">{% include '_role_label.html' %}</span>
                             </div>
-                            <div class="member-badges">
-                                {% set user_badges = get_user_badges(member.username) %}
-                                {% for badge in user_badges %}
-                                <div class="badge-item">
-                                    <i class="fas fa-award"></i>
-                                    <span>{{ badge.badge_name }}</span>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% if member.skills_utilized %}
-                            <div class="member-skills">
-                                {% for skill in member.skills_utilized.split(',') %}
-                                    {% set skill_trimmed = skill.strip() %}
-                                    <div class="skill-chip">
-                                        <span>{{ skill_trimmed }}</span>
-                                        <span class="endorsement-count">{{ member.skill_endorsements[skill_trimmed] }}</span>
-                                        {% if session.username != member.username %}
-                                            <button onclick="endorseSkill('{{ member.username }}', '{{ skill_trimmed }}', this)" 
-                                                    class="endorse-btn">
-                                                <i class="fas fa-thumbs-up"></i>
-                                            </button>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
                         </div>
-                        {% endfor %}
-                    </div>
-
-                    {% if is_admin and pending_invites %}
-                    <div class="pending-invites">
-                        <h4>Pending Invites</h4>
-                        <div class="pending-list">
-                            {% for invite in pending_invites %}
-                            <div class="pending-invite-item">
-                                <img src="{{ invite.email | gravatar }}" alt="{{ invite.username }}" class="member-avatar">
-                                <span class="username">{{ invite.username }}</span>
-                                <span class="status-badge">Pending</span>
+                        {% set user_badges = get_user_badges(member.username) %}
+                        {% if user_badges %}
+                        <div class="member-badges">
+                            {% for badge in user_badges %}
+                            <div class="badge-item" title="{{ badge.badge_name }}">
+                                <i class="fas fa-award"></i>
+                                <span>{{ badge.badge_name }}</span>
                             </div>
                             {% endfor %}
                         </div>
-                    </div>
-                    {% endif %}
-                </section>
-
-                <!-- Project Updates Section -->
-                <section class="updates-section">
-                    <div class="updates-header">
-                        <h3>Project Updates</h3>
-                        <button onclick="showUpdateModal()" class="post-update-btn">
-                            <i class="fas fa-plus"></i> Post Update
-                        </button>
-                    </div>
-                    <div class="updates-list">
-                        {% for update in updates %}
-                        <div class="update-card">
-                            <div class="update-header">
-                                <img src="{{ update.profile_image | gravatar }}" alt="{{ update.username }}" class="update-avatar">
-                                <div class="update-meta">
-                                    <span class="update-author">{{ update.username }}</span>
-                                    <span class="update-time">{{ update.created_at | timeago }}</span>
+                        {% endif %}
+                        {% if member.skills_utilized %}
+                        <div class="member-skills">
+                            {% for skill in member.skills_utilized.split(',') %}
+                                {% set skill_trimmed = skill.strip() %}
+                                <div class="skill-chip">
+                                    <span>{{ skill_trimmed }}</span>
+                                    <span class="endorsement-count">{{ member.skill_endorsements[skill_trimmed] }}</span>
+                                    {% if session.username != member.username %}
+                                        <button onclick="endorseSkill('{{ member.username }}', '{{ skill_trimmed }}', this)"
+                                                class="endorse-btn" title="Endorse {{ skill_trimmed }}">
+                                            <i class="fas fa-thumbs-up"></i>
+                                        </button>
+                                    {% endif %}
                                 </div>
-                                <span class="update-type {{ update.update_type }}">{{ update.update_type }}</span>
-                            </div>
-                            <p class="update-content">{{ update.content }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_admin and pending_invites %}
+                <div class="pending-invites">
+                    <h4>Pending invites</h4>
+                    <div class="pending-list">
+                        {% for invite in pending_invites %}
+                        <div class="pending-invite-item">
+                            <img src="{{ invite.email | gravatar }}" alt="{{ invite.username }}" class="member-avatar">
+                            <span class="username">{{ invite.username }}</span>
+                            <span class="status-badge">Pending</span>
                         </div>
                         {% endfor %}
                     </div>
-                </section>
+                </div>
+                {% endif %}
+            </section>
 
-                {% if project.github_repo %}
-                <!-- GitHub Integration Section -->
-                <section class="github-section">
-                    <h3>GitHub Activity</h3>
-                    <div class="github-content">
-                        <div class="github-issues">
-                            <h4>Open Issues</h4>
-                            <div id="issuesList" class="issues-list">
-                                <!-- Issues will be loaded via JavaScript -->
-                                <div class="loading">Loading issues...</div>
-                            </div>
-                        </div>
-                        <div class="github-commits">
-                            <h4>Recent Commits</h4>
-                            <div id="commitsList" class="commits-list">
-                                <!-- Commits will be loaded via JavaScript -->
-                                <div class="loading">Loading commits...</div>
-                            </div>
+            {% if project.github_repo %}
+            <!-- GitHub -->
+            <section class="card github-section">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fab fa-github"></i> GitHub activity</h2>
+                </div>
+                <div class="github-content">
+                    <div class="github-issues">
+                        <h4>Open issues</h4>
+                        <div id="issuesList" class="issues-list">
+                            <div class="loading">Loading issues…</div>
                         </div>
                     </div>
-                </section>
-                {% endif %}
-            </div>
-
-            <!-- Invite Members Modal -->
-            <div id="inviteModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <h3>Invite Team Members</h3>
-                    <form action="{{ url_for('invite_members') }}" method="POST">
-                        <input type="hidden" name="project_id" value="{{ project.id }}">
-                        <div class="form-group">
-                            <label for="usernames">Usernames (comma-separated)</label>
-                            <input type="text" id="usernames" name="usernames" required>
+                    <div class="github-commits">
+                        <h4>Recent commits</h4>
+                        <div id="commitsList" class="commits-list">
+                            <div class="loading">Loading commits…</div>
                         </div>
-                        <div class="form-group">
-                            <label for="role">Role</label>
-                            <select id="role" name="role" required>
-                                <option value="frontend">Frontend Developer</option>
-                                <option value="backend">Backend Developer</option>
-                                <option value="fullstack">Full Stack Developer</option>
-                                <option value="ui-ux">UI/UX Designer</option>
-                                <option value="pm">Project Manager</option>
-                            </select>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" onclick="hideInviteModal()" class="cancel-btn">Cancel</button>
-                            <button type="submit" class="submit-btn">Send Invites</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </section>
+            {% endif %}
+        </div>
 
-            <!-- Post Update Modal -->
-            <div id="updateModal" class="modal" style="display: none;">
-                <div class="modal-content">
-                    <h3>Post Project Update</h3>
-                    <form id="updateForm">
-                        <input type="hidden" name="project_id" value="{{ project.id }}">
-                        <div class="form-group">
-                            <label for="update-type">Update Type</label>
-                            <select id="update-type" name="update_type" required>
-                                <option value="progress">Progress Update</option>
-                                <option value="milestone">Milestone Achieved</option>
-                                <option value="blocker">Blocker/Issue</option>
-                                <option value="announcement">Announcement</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="update-content">Content</label>
-                            <textarea id="update-content" name="content" required></textarea>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" onclick="hideUpdateModal()" class="cancel-btn">Cancel</button>
-                            <button type="submit" class="submit-btn">Post Update</button>
-                        </div>
-                    </form>
-                </div>
+        <!-- Updates -->
+        <section class="card updates-section">
+            <div class="section-header updates-header">
+                <h2 class="section-title"><i class="fas fa-stream"></i> Updates</h2>
+                <button onclick="showUpdateModal()" class="btn btn-secondary btn-sm post-update-btn">
+                    <i class="fas fa-plus"></i> Post
+                </button>
             </div>
-        </main>
+            <div class="updates-list">
+                {% for update in updates %}
+                <div class="update-card">
+                    <div class="update-header">
+                        <img src="{{ update.profile_image | gravatar }}" alt="{{ update.username }}" class="update-avatar">
+                        <div class="update-meta">
+                            <span class="update-author">{{ update.username }}</span>
+                            <span class="update-time">{{ update.created_at | timeago }}</span>
+                        </div>
+                        <span class="update-type {{ update.update_type }}">{{ update.update_type }}</span>
+                    </div>
+                    <p class="update-content">{{ update.content }}</p>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-bullhorn"></i></div>
+                    <h4>No updates yet</h4>
+                    <p>Share progress, milestones or blockers to keep the team aligned.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
+</div>
+{% endblock %}
 
-    <script src="{{ url_for('static', filename='js/project_detail.js') }}"></script>
-</body>
-</html> 
+{% block modals %}
+<!-- Invite Members Modal -->
+<div id="inviteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <button type="button" onclick="hideInviteModal()" class="modal-close" aria-label="Close"><i class="fas fa-times"></i></button>
+        <h3>Invite team members</h3>
+        <form action="{{ url_for('invite_members') }}" method="POST">
+            <input type="hidden" name="project_id" value="{{ project.id }}">
+            <div class="form-group">
+                <label for="usernames">Usernames</label>
+                <input type="text" id="usernames" name="usernames" required placeholder="alice, bob">
+                <p class="field-hint">Separate multiple usernames with commas.</p>
+            </div>
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select id="role" name="role" required>
+                    <option value="frontend">Frontend Developer</option>
+                    <option value="backend">Backend Developer</option>
+                    <option value="fullstack">Full Stack Developer</option>
+                    <option value="ui-ux">UI/UX Designer</option>
+                    <option value="pm">Project Manager</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="hideInviteModal()" class="btn btn-ghost cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary submit-btn">Send invites</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Post Update Modal -->
+<div id="updateModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <button type="button" onclick="hideUpdateModal()" class="modal-close" aria-label="Close"><i class="fas fa-times"></i></button>
+        <h3>Post a project update</h3>
+        <form id="updateForm">
+            <input type="hidden" name="project_id" value="{{ project.id }}">
+            <div class="form-group">
+                <label for="update-type">Update type</label>
+                <select id="update-type" name="update_type" required>
+                    <option value="progress">Progress update</option>
+                    <option value="milestone">Milestone achieved</option>
+                    <option value="blocker">Blocker / issue</option>
+                    <option value="announcement">Announcement</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="update-content">Content</label>
+                <textarea id="update-content" name="content" required placeholder="What's changed?"></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="hideUpdateModal()" class="btn btn-ghost cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary submit-btn">Post update</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/project_detail.js') }}"></script>
+{% endblock %}

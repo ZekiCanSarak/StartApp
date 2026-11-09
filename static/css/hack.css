@@ -1,807 +1,248 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Hackathons */
+
+.hackathon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
 }
 
-body {
-    font-family: "Montserrat", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
-    background-color: #f4f4f4;
-    color: #333;
-}
-
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #0073b1;
-    color: white;
-    padding: 1rem 2rem;
-    position: fixed; 
-    top: 0;
-    left: 0;
-    width: 100%; 
-    z-index: 1000; 
-    height: 60px;
-}
-
-.navbar h1 {
-    font-size: 1.5rem;
-}
-
-.navbar ul {
-    list-style: none;
-    display: flex;
-}
-
-.navbar ul li {
-    margin-left: 2rem;
-}
-
-.navbar ul li a {
-    font-family: "Montserrat", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 700;
-    font-style: normal;
-    padding: 10px;
-    background-color: #0073b1;
-    color: white;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.navbar ul li a:hover {
-    background-color: #005f8a;
-}
-
-.container {
-    margin-left: 250px;
-    padding: 2rem;
-    padding-top: 5rem;
-    width: calc(100% - 250px);
-}
-
-.header-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
-    width: 100%;
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-#hackathon-feed {
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.create-post-btn {
-    background-color: #4caf50; 
-    color: white;
-    border: none;
-    padding: 10px 20px; 
-    cursor: pointer;
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-    font-size: 1rem; 
-    font-weight: bold;
-    display: inline-flex; 
-    align-items: center; 
-    gap: 10px; 
-    transition: background-color 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
-    width: auto; 
-    max-width: 250px; 
-}
-
-.create-post-btn:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.create-post-btn i {
-    font-size: 1.2rem;
-}
-
-.sidebar {
-    width: 250px;
-    background-color: #f4f4f4;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 999;
-    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-    padding-top: 80px;
-}
-
-.sidebar ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar ul li {
-    margin-bottom: 5px;
-}
-
-.sidebar ul li a {
-    position: relative;
-    display: flex;
-    align-items: center;
-    color: #333;
-    text-decoration: none;
-    padding: 12px 20px;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    border-radius: 8px;
-    margin: 0 10px;
-    font-family: "Montserrat", sans-serif;
-    font-optical-sizing: auto;
-    font-style: normal;
-}
-
-.sidebar ul li a i {
-    margin-right: 10px;
-    width: 20px;
-    text-align: center;
-}
-
-.sidebar ul li a:hover {
-    background-color: rgba(0, 115, 177, 0.1);
-    color: #0073b1;
-}
-
-.sidebar ul li a.active {
-    background-color: #0073b1;
-    color: white;
-}
-
-.category-container {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
-    padding: 30px;
-    width: 100%;
-}
-
-.category-container h2 {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #0073b1;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
+/* Card — kept flat because hack.js rebuilds its innerHTML after edits */
 .hackathon-post {
-    width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 12px;
-    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hackathon-post:hover {
-    transform: translateY(-5px);
-    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-.hackathon-post h3,
-.hackathon-post p {
-    text-align: left;
-    margin: 5px 0;
-    color: #333;
-}
-
-.participants-info {
-    text-align: left;
-    margin: 10px 0;
-    color: #0073b1;
-    font-weight: bold;
-}
-
-.hackathon-post.expired {
-    opacity: 0.8;
-    background-color: #f8f8f8;
-    border: 1px solid #ddd;
-}
-
-.expired-note {
-    color: #dc3545;
-    font-style: italic;
-    margin: 10px 0;
-    padding: 5px 10px;
-    background-color: rgba(220, 53, 69, 0.1);
-    border-radius: 4px;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    padding: 22px;
+    overflow: hidden;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s ease, opacity 0.3s ease;
 }
-
-.expired-note i {
-    color: #dc3545;
-}
-
-/* Add a max-height to the expired hackathons container with scrolling */
-#expired-hackathons {
-    max-height: 600px;
-    overflow-y: auto;
-    padding-right: 10px;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
-}
-
-#expired-hackathons::-webkit-scrollbar {
-    width: 8px;
-}
-
-#expired-hackathons::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-#expired-hackathons::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-#expired-hackathons::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* Add a subtle transition when hackathons are removed */
-.hackathon-post {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.hackathon-post.expired {
-    transform-origin: top;
-}
-
-.hackathon-post.expired.removing {
-    opacity: 0;
-    transform: translateX(-100%);
-}
-
-.button-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 10px;
-}
-
-.join-hackathon-btn,
-.calendar-btn,
-.edit-hackathon-btn {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 5px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.join-hackathon-btn {
-    background-color: #0073b1;
-    color: white;
-}
-
-.join-hackathon-btn:hover {
-    background-color: #005f91;
-    transform: translateY(-2px);
-}
-
-.join-hackathon-btn.joined {
-    background-color: gray;
-    cursor: default;
-}
-
-.calendar-btn {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.calendar-btn:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
-}
-
-.edit-hackathon-btn {
-    background-color: #ff9800;
-    color: white;
-}
-
-.edit-hackathon-btn:hover {
-    background-color: #e68a00;
-    transform: translateY(-2px);
-}
-
-#hackathon-form-popup {
-    display: none;
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    border: 2px solid #0073b1;
-    z-index: 100;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    max-width: 500px;
-    width: 90%;
-}
-
-#hackathon-form-popup h2 {
-    text-align: center;
-    color: #0073b1;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    font-weight: bold;
-}
-
-.input-group {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.input-group input,
-.input-group textarea,
-.input-group select {
-    width: 100%;
-    padding: 12px;
-    padding-top: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    font-size: 1rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.input-group input:focus,
-.input-group textarea:focus,
-.input-group select:focus {
-    border-color: #0073b1;
-    box-shadow: 0 0 4px rgba(0, 115, 177, 0.5);
-    background-color: white;
-    outline: none;
-}
-
-.input-group label {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    font-size: 0.9rem;
-    color: #aaa;
-    transition: all 0.3s ease;
-    pointer-events: none;
-}
-
-.input-group input:focus + label,
-.input-group input:not(:placeholder-shown) + label,
-.input-group textarea:focus + label,
-.input-group textarea:not(:placeholder-shown) + label {
-    top: -8px;
-    left: 12px;
-    font-size: 0.8rem;
-    color: #0073b1;
-    background-color: white;
-    padding: 0 4px;
-}
-
-button {
-    padding: 12px 20px;
-    background-color: #0073b1;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%;
-    margin-top: 10px;
-}
-
-button:hover {
-    background-color: #005f8a;
-    transform: translateY(-2px);
-}
-
-.cancel-btn {
-    background-color: red;
-}
-
-.cancel-btn:hover {
-    background-color: darkred;
-}
+.hackathon-post:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
 
 .hackathon-image {
-    width: 100%;
-    max-height: 300px;
+    margin: -22px -22px 18px;
+    aspect-ratio: 16 / 8;
     overflow: hidden;
-    border-radius: 8px;
-    margin-bottom: 15px;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--border);
 }
+.hackathon-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s var(--ease); }
+.hackathon-post:hover .hackathon-image img { transform: scale(1.04); }
 
-.hackathon-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: transform 0.3s ease;
-}
+.hackathon-post h3 { font-size: 1.12rem; font-weight: 650; margin-bottom: 8px; }
 
-.hackathon-image img:hover {
-    transform: scale(1.05);
-}
+.hackathon-post p { font-size: 0.88rem; color: var(--text-2); margin: 0; }
 
-.input-group input[type="file"] {
-    padding: 8px;
-    background-color: #f9f9f9;
-    border: 1px dashed #ccc;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.input-group input[type="file"]:hover {
-    border-color: #0073b1;
-    background-color: #f0f7fb;
-}
-
-#current-image-preview {
-    margin-top: 10px;
-    max-width: 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#current-image-preview img {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 10px;
-}
-
-.remove-image-btn {
-    background-color: #dc3545;
-    color: white;
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+.hackathon-post p.description {
     font-size: 0.9rem;
-    margin-top: 10px;
-    width: auto;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.hackathon-post p.date,
+.hackathon-post p.location,
+.hackathon-post p.participants-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+}
+.hackathon-post p.date strong,
+.hackathon-post p.location strong,
+.hackathon-post p.participants-info strong {
+    font-weight: 500;
+    color: var(--text-3);
+}
+.hackathon-post p.participants-info { color: var(--primary); font-weight: 600; border-bottom: 1px solid var(--border); }
+
+.expired-note {
+    margin-top: 14px !important;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-}
-
-.remove-image-btn:hover {
-    background-color: #c82333;
-}
-
-.remove-image-btn i {
-    font-size: 0.8rem;
-}
-
-.sidebar-divider {
-    font-size: 0.9rem;
-    color: #666;
-    padding: 12px 20px;
-    margin-top: 10px;
+    gap: 8px;
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    color: var(--text-3) !important;
+    font-size: 0.78rem !important;
     font-weight: 600;
-    border-top: 1px solid #ddd;
 }
 
-.sidebar-notification {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: #ff3b30;
-    color: white;
-    border-radius: 50%;
-    min-width: 20px;
-    height: 20px;
-    display: none;
+.hackathon-post.expired { background: var(--surface-2); }
+.hackathon-post.expired .hackathon-image img { filter: grayscale(0.7); }
+.hackathon-post.expired h3 { color: var(--text-2); }
+.hackathon-post.expired.removing { opacity: 0; transform: translateX(-24px); }
+
+#expired-hackathons { max-height: 760px; overflow-y: auto; padding: 4px; margin: -4px; }
+
+/* Actions */
+.team-matching-section { margin-top: 16px; }
+
+.button-group { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; flex-wrap: wrap; }
+.button-group:empty { display: none; }
+
+.team-match-btn,
+.join-btn,
+.leave-btn,
+.edit-hackathon-btn {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    align-items: center;
-    font-size: 12px;
-    font-weight: bold;
-    padding: 0 6px;
-    line-height: 20px;
-}
-
-.sidebar-notification.active {
-    display: flex;
-}
-
-@keyframes notification-pulse {
-    0% {
-        transform: translateY(-50%) scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: translateY(-50%) scale(1.1);
-        opacity: 0.8;
-    }
-    100% {
-        transform: translateY(-50%) scale(1);
-        opacity: 1;
-    }
-}
-
-#personalised-hackathons, #other-hackathons, #expired-hackathons {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Team Matching Styles */
-.team-matching-section {
-    margin: 1rem 0;
+    gap: 8px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .team-match-btn {
-    background-color: #1E88E5;  /* Brighter Material Design blue */
-    color: white;
-    border: none;
-    padding: 1rem 2rem;  /* Even larger padding */
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
+    width: 100%;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border-color: #ecdab7;
+}
+.team-match-btn:hover { background: #f0e0c0; }
+.team-match-btn i { color: var(--accent); }
+
+.join-btn { flex: 1; background: var(--primary); color: #fff; }
+.join-btn:hover { background: var(--primary-hover); }
+
+.leave-btn { flex: 1; background: var(--surface); color: var(--danger); border-color: #efc9c4; }
+.leave-btn:hover { background: var(--danger-soft); }
+
+.edit-hackathon-btn { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.edit-hackathon-btn:hover { background: var(--surface-2); border-color: var(--text-3); }
+
+/* Form popup */
+#hackathon-form-popup { max-width: 560px; }
+
+#current-image-preview { margin-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+#current-image-preview img { max-width: 220px; border-radius: 10px; border: 1px solid var(--border); }
+
+.remove-image-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 7px;
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 0.8rem;
     font-weight: 600;
-    font-size: 1.1rem;  /* Larger font */
-    transition: all 0.3s ease;
-    width: 100%;
-    justify-content: center;
-    margin: 1.5rem 0;  /* More margin */
-    box-shadow: 0 4px 6px rgba(30, 136, 229, 0.4);  /* More prominent shadow */
-    text-transform: uppercase;  /* Make it stand out more */
-    letter-spacing: 0.5px;  /* Better text readability */
+    border: none;
+    cursor: pointer;
 }
+.remove-image-btn:hover { background: #f6d5d1; }
 
-.team-match-btn:hover {
-    background-color: #1565C0;  /* Darker blue on hover */
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(30, 136, 229, 0.5);
-}
-
-.team-match-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.4);
-}
-
-.team-match-btn i {
-    font-size: 1.2rem;
-    color: #fff;  /* Ensure icon is white */
-}
-
-/* Team Matches Modal */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-    background-color: white;
-    margin: 5% auto;
-    padding: 0;
-    width: 80%;
-    max-width: 800px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
+/* Team matches modal (injected by hack.js) */
+#teamMatchesModal .modal-content { max-width: 880px; padding: 0; overflow: hidden; }
 
 .modal-header {
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
 }
-
 .modal-header h2 {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: #1E88E5;
+    gap: 12px;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 600;
 }
-
-.modal-header h2 i {
-    font-size: 1.5rem;
-}
+.modal-header h2 i { color: var(--accent); font-size: 1.1rem; }
 
 .close {
-    color: #aaa;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
     font-size: 1.5rem;
-    font-weight: bold;
+    line-height: 1;
     cursor: pointer;
 }
+.close:hover { background: var(--surface-3); color: var(--text); }
 
-.close:hover {
-    color: var(--primary-color);
-}
+.modal-body { padding: 24px 28px 28px; max-height: 70vh; overflow-y: auto; }
 
-.modal-body {
-    padding: 1.5rem;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.matches-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 1.5rem;
-    padding: 1rem;
-}
+.matches-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
 
 .match-card {
-    background-color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+.match-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
 
-.match-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.match-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.match-header h3 {
-    margin: 0;
-    color: #1E88E5;
-    font-size: 1.25rem;
-}
+.match-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.match-header h3 { font-size: 1.05rem; }
 
 .match-score {
-    background-color: #E3F2FD;
-    color: #1565C0;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary-ink);
+    font-size: 0.8rem;
+    font-weight: 700;
 }
+.match-score i { font-size: 0.7rem; }
 
-.match-details {
-    margin: 1rem 0;
-}
-
-.match-details p {
-    margin: 0.5rem 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.match-details i {
-    color: #1E88E5;
-}
+.match-details p { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0; font-size: 0.85rem; color: var(--text-2); }
+.match-details i { color: var(--text-3); width: 16px; }
 
 .skill-tag, .role-tag {
-    background-color: #E3F2FD;
-    color: #1565C0;
-    padding: 0.25rem 0.75rem;
-    border-radius: 15px;
-    font-size: 0.875rem;
-    margin: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
+.skill-tag { background: var(--surface-3); color: var(--text-2); }
+.role-tag { background: var(--accent-soft); color: var(--accent-ink); }
 
-.match-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;  /* Two equal columns for two buttons */
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
+.match-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
 .match-actions button {
-    padding: 0.75rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 8px;
+    height: 38px;
+    border-radius: 9px;
+    font-size: 0.85rem;
     font-weight: 600;
-    transition: all 0.3s ease;
-    width: 100%;  /* Full width within grid cell */
+    border: 1px solid transparent;
+    cursor: pointer;
 }
+.match-actions .message-btn { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.match-actions .message-btn:hover { background: var(--surface-2); }
+.match-actions .connect-btn { background: var(--primary); color: #fff; }
+.match-actions .connect-btn:hover { background: var(--primary-hover); }
+.match-actions .connect-btn.sent,
+.match-actions .connect-btn.connected { background: var(--success-soft); color: var(--success); cursor: default; }
 
-.view-profile-btn {
-    background-color: #E3F2FD;
-    color: #1565C0;
-}
-
-.view-profile-btn:hover {
-    background-color: #BBDEFB;
-}
-
-.message-btn {
-    background-color: #1E88E5;
-    color: white;
-}
-
-.message-btn:hover {
-    background-color: #1565C0;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(30, 136, 229, 0.3);
-}
-
-.connect-btn {
-    background-color: #2E7D32;
-    color: white;
-}
-
-.connect-btn:hover {
-    background-color: #1B5E20;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(46, 125, 50, 0.3);
-}
-
-.connect-btn.sent {
-    background-color: #9E9E9E;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.connect-btn.connected {
-    background-color: #66BB6A;  /* Lighter green to indicate success */
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    opacity: 0.9;
-}
-
-.connect-btn.connected:hover {
-    background-color: #66BB6A;
-    transform: none;
-    box-shadow: none;
-}
-
-.connect-btn.connected i {
-    color: #E8F5E9;  /* Light green color for the checkmark */
-}
-
-.no-matches {
-    text-align: center;
-    color: #666;
-    padding: 2rem;
-    font-size: 1.1rem;
-}
+.no-matches { text-align: center; color: var(--text-2); padding: 40px 16px; }

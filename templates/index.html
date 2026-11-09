@@ -1,219 +1,230 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Homepage</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="fas fa-rocket"></i> StartApp</h1>
-            <nav>
-                <ul>
-                    {%if not logged_in %}
-                        <li><button onclick="toggleForm('loginForm')">Login</button></li>
-                        <li><button onclick="toggleForm('signupForm')">Signup</button></li>
-                    {% else %}
-                        <li><a href="/logout">Logout</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
+{% extends 'base.html' %}
+{% set active_page = 'home' %}
+
+{% block title %}{{ 'Opportunities' if logged_in else 'Build with the right team' }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">{% endblock %}
+
+{% block body %}
+{% if logged_in %}
+    {{ super() }}
+{% else %}
+<div class="landing">
+    {% include '_flash.html' %}
+
+    <header class="landing-nav">
+        <a href="/" class="sidebar-brand">
+            <span class="brand-mark"><i class="fas fa-rocket"></i></span>
+            <span class="brand-name">StartApp</span>
+        </a>
+        <nav class="landing-nav-actions">
+            <button type="button" class="btn btn-ghost-light" onclick="toggleForm('loginForm')">Log in</button>
+            <button type="button" class="btn btn-accent" onclick="toggleForm('signupForm')">Get started</button>
+        </nav>
     </header>
 
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="alert {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+    <section class="hero">
+        <div class="hero-inner">
+            <span class="eyebrow eyebrow-light"><i class="fas fa-circle"></i> Hackathons · Projects · Careers</span>
+            <h1 class="hero-title">Build with the right team.<br><em>Ship work that matters.</em></h1>
+            <p class="hero-subtitle">StartApp brings students and early-career builders together — discover hackathons, get matched with teammates by skill, run projects end to end, and land the roles you're after.</p>
+            <div class="hero-actions">
+                <button type="button" class="btn btn-accent btn-lg" onclick="toggleForm('signupForm')">Create your free account <i class="fas fa-arrow-right"></i></button>
+                <button type="button" class="btn btn-outline-light btn-lg" onclick="toggleForm('loginForm')">I already have an account</button>
+            </div>
+            <div class="hero-stats">
+                <div><strong>Team matching</strong><span>Scored on skills &amp; roles</span></div>
+                <div><strong>Project boards</strong><span>Tasks, updates &amp; GitHub</span></div>
+                <div><strong>Job feed</strong><span>Personalised to your goals</span></div>
+            </div>
+        </div>
+    </section>
 
-        {%if not logged_in %}
-        <section class="guest-hackathons">
-            <h2>Explore Hackathons</h2>
-            <div class="hackathon-preview">
+    <section class="landing-section">
+        <div class="landing-section-inner">
+            <div class="section-intro">
+                <span class="eyebrow">Upcoming</span>
+                <h2 class="landing-heading">Explore hackathons</h2>
+                <p class="page-subtitle">A preview of what's happening now. Sign up to join, find teammates and follow live updates.</p>
+            </div>
+
+            <div class="card-grid">
                 {% for hackathon in guest_hackathons %}
-                <div class="hackathon-post">
-                    <h3><i class="fas fa-laptop-code"></i> {{ hackathon.title }}</h3>
-                    <p>{{ hackathon.description }}</p>
-                    <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                    <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                    <p class="signup-prompt" style="cursor: pointer;">
-                        <i class="fas fa-user-plus"></i> <strong>Signup to join!</strong>
-                    </p>
+                <article class="card preview-card hover-lift">
+                    <div class="preview-card-top">
+                        <span class="tag tag-accent"><i class="fas fa-calendar"></i> {{ hackathon.date }}</span>
+                    </div>
+                    <h3>{{ hackathon.title }}</h3>
+                    <p class="preview-card-text">{{ hackathon.description }}</p>
+                    <div class="meta-row">
+                        <span><i class="fas fa-map-marker-alt"></i> {{ hackathon.location }}</span>
+                    </div>
+                    <p class="signup-prompt"><i class="fas fa-user-plus"></i> Sign up to join <i class="fas fa-arrow-right"></i></p>
+                </article>
+                {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-laptop-code"></i></div>
+                    <h4>No hackathons listed yet</h4>
+                    <p>New events are added by organisers all the time — check back soon.</p>
                 </div>
                 {% endfor %}
             </div>
-        </section>
-        <div id="loginForm" class="form-popup">
-            <h2>Login</h2>
-            <form action="/" method="POST" autocomplete="off">
-                <div class="input-group">
-                    <input type="text" name="login_username" placeholder=" " required autocomplete="off">
-                    <label for="login_username">Username</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" name="login_password" placeholder=" " required autocomplete="off">
-                    <label for="login_password">Password</label>
-                </div>
-                <button type="submit" name="login">Login</button>
-                <button type="button" class="close-btn" onclick="closeForm('loginForm')">Close</button>
-            </form>
         </div>
-    
-        <div id="signupForm" class="form-popup">
-            <h2>Signup</h2>
-            <form action="/" method="POST" autocomplete="off">
-                <div class="input-group">
-                    <input type="text" name="username" placeholder=" " required autocomplete="off">
-                    <label for="username">Username</label>
-                </div>
-                <div class="input-group">
-                    <input type="email" name="email" placeholder=" " required autocomplete="off">
-                    <label for="email">Email</label>
-                </div>
-                <div class="input-group">
-                    <input type="password" name="password" placeholder=" " required autocomplete="off">
-                    <label for="password">Password</label>
-                </div>
-                <div class="input-group">
-                    <select name="role" required autocomplete="off">
-                        <option value="" disabled selected>Select Role</option>
-                        <option value="user">User</option>
-                        <option value="organiser">Organiser</option>
-                    </select>
-                    <label for="role">Role</label>
-                </div>
-                <button type="submit" name="signup">Signup</button>
-                <button type="button" class="close-btn" onclick="closeForm('signupForm')">Close</button>
-            </form>
-        </div>
-        {% else %}
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/" class="active"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-                <li>
-                    <a href="/connections">
-                        <i class="fas fa-users"></i> Connections
-                        <span class="sidebar-notification" id="total-messages-count"></span>
-                    </a>
-                </li>
-                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
+    </section>
 
-    
-
-        <main class="main-content">
-            <button class="create-post-btn fixed" onclick="showForm('postFormPopup')">
-                <i class="fas fa-plus-circle"></i> Create Job Post
-            </button>
-            <h2>Welcome, {{ session['username'] }}!</h2>
-            <div class="job-feed">
-                {% if personalised_jobs %}
-                    <h2>Personalised Job Matches:</h2>
-                    <div id="personalised-jobs">
-                        {% for job in personalised_jobs %}
-                            <div class="job-post">
-                                <h3><i class="fas fa-briefcase"></i> {{ job.title }}</h3>
-                                <p>{{ job.description }}</p>
-                                <a href="{{ job.url }}" target="_blank">
-                                    <i class="fas fa-external-link-alt"></i> Apply Here
-                                </a>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                
-                <h2>All Job Posts:</h2>
-                <div id="general-jobs">
-                    {% for job in general_jobs %}
-                        <div class="job-post">
-                            <h3><i class="fas fa-briefcase"></i> {{ job.title }}</h3>
-                            <p>{{ job.description }}</p>
-                            <a href="{{ job.url }}" target="_blank">
-                                <i class="fas fa-external-link-alt"></i> Apply Here
-                            </a>
-                        </div>
-                    {% endfor %}
-                </div>
+    <section class="landing-section landing-section--alt">
+        <div class="landing-section-inner features">
+            <div class="feature">
+                <span class="feature-icon"><i class="fas fa-users"></i></span>
+                <h3>Find your teammates</h3>
+                <p>Match with people whose skills complement yours, connect, and message them directly.</p>
             </div>
-        </main>
-
-        <div id="postFormPopup" class="form-popup">
-            <h2>Create Job Post</h2>
-            <form id="postForm" action="/create_post" method="POST" autocomplete="off">
-                <div class="input-group">
-                    <input type="text" name="title" placeholder=" " required autocomplete="off">
-                    <label for="title">Job Title</label>
-                </div>
-                <div class="input-group">
-                    <textarea name="description" placeholder=" " rows="4" required autocomplete="off"></textarea>
-                    <label for="description">Description</label>
-                </div>
-                <div class="input-group">
-                    <input type="url" name="url" placeholder=" " required autocomplete="off">
-                    <label for="url">Application Link (URL)</label>
-                </div>
-                <button type="submit">Post</button>
-                <button type="button" class="close-btn" onclick="closeForm('postFormPopup')">Close</button>
-            </form>
+            <div class="feature">
+                <span class="feature-icon"><i class="fas fa-tasks"></i></span>
+                <h3>Run real projects</h3>
+                <p>Kanban task boards, team roles, progress updates and skill endorsements in one place.</p>
+            </div>
+            <div class="feature">
+                <span class="feature-icon"><i class="fas fa-award"></i></span>
+                <h3>Grow your profile</h3>
+                <p>Earn achievements, learn from curated resources and get matched to relevant roles.</p>
+            </div>
         </div>
+    </section>
 
+    <footer class="landing-footer">
+        <span>&copy; StartApp</span>
+        <span>Built for builders.</span>
+    </footer>
 
-    {% endif %}
-
-
-
+    <div id="loginForm" class="form-popup">
+        <h2>Welcome back</h2>
+        <p class="popup-subtitle">Log in to continue to StartApp.</p>
+        <form action="/" method="POST" autocomplete="off">
+            <div class="form-group">
+                <label for="login_username">Username</label>
+                <input type="text" id="login_username" name="login_username" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="login_password">Password</label>
+                <input type="password" id="login_password" name="login_password" required autocomplete="off">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost close-btn" onclick="closeForm('loginForm')">Cancel</button>
+                <button type="submit" name="login" class="btn btn-primary btn-lg">Log in</button>
+            </div>
+        </form>
     </div>
 
+    <div id="signupForm" class="form-popup">
+        <h2>Create your account</h2>
+        <p class="popup-subtitle">It takes less than a minute.</p>
+        <form action="/" method="POST" autocomplete="off">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="role">I'm joining as</label>
+                <select id="role" name="role" required autocomplete="off">
+                    <option value="" disabled selected>Select a role</option>
+                    <option value="user">Participant</option>
+                    <option value="organiser">Organiser</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-ghost close-btn" onclick="closeForm('signupForm')">Cancel</button>
+                <button type="submit" name="signup" class="btn btn-primary btn-lg">Create account</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
 
-    <script src="{{ url_for('static', filename='js/index.js')}}"></script>
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Dashboard</span>
+        <h1 class="page-title">Welcome, {{ session['username'] }}!</h1>
+        <p class="page-subtitle">Roles and opportunities shared by the community, with the best matches for your preferences first.</p>
+    </div>
+    <div class="page-header-actions">
+        <button type="button" class="btn btn-primary create-post-btn" onclick="showForm('postFormPopup')">
+            <i class="fas fa-plus"></i> Post a job
+        </button>
+    </div>
+</div>
 
-    {% if logged_in %}
-    <script>
-    async function updateTotalUnreadCount() {
-        try {
-            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
-            const data = await response.json();
-            
-            if (response.ok) {
-                const badge = document.getElementById('total-messages-count');
-                const count = data.count;
-                
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.add('active');
-                } else {
-                    badge.textContent = '';
-                    badge.classList.remove('active');
-                }
-            }
-        } catch (error) {
-            console.error('Error updating total unread count:', error);
-        }
-    }
-
-    // Update total unread count every 10 seconds
-    updateTotalUnreadCount();
-    setInterval(updateTotalUnreadCount, 10000);
-    </script>
+<div class="job-feed">
+    {% if personalised_jobs %}
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-star"></i> Recommended for you <span class="count-pill">{{ personalised_jobs|length }}</span></h2>
+        </div>
+        <div id="personalised-jobs" class="card-grid">
+            {% for job in personalised_jobs %}
+                {% include '_job_card.html' %}
+            {% endfor %}
+        </div>
+    </section>
     {% endif %}
 
-</body>
-</html>
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-briefcase"></i> All opportunities <span class="count-pill">{{ general_jobs|length }}</span></h2>
+        </div>
+        <div id="general-jobs" class="card-grid">
+            {% for job in general_jobs %}
+                {% include '_job_card.html' %}
+            {% endfor %}
+        </div>
+        {% if not general_jobs %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-briefcase"></i></div>
+            <h4>No job posts yet</h4>
+            <p>Be the first to share an opening with the community.</p>
+            <button type="button" class="btn btn-primary" onclick="showForm('postFormPopup')"><i class="fas fa-plus"></i> Post a job</button>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block modals %}
+{% if logged_in %}
+<div id="postFormPopup" class="form-popup">
+    <h2>Post a job</h2>
+    <p class="popup-subtitle">Share an opening with the StartApp community.</p>
+    <form id="postForm" action="/create_post" method="POST" autocomplete="off">
+        <div class="form-group">
+            <label for="post-title">Job title</label>
+            <input type="text" id="post-title" name="title" required placeholder="e.g. Junior Frontend Developer" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="post-description">Description</label>
+            <textarea id="post-description" name="description" rows="4" required placeholder="What's the role, team and what you're looking for?" autocomplete="off"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="post-url">Application link</label>
+            <input type="url" id="post-url" name="url" required placeholder="https://" autocomplete="off">
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-ghost close-btn" onclick="closeForm('postFormPopup')">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg">Publish post</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

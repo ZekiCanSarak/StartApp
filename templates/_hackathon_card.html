@@ -1,0 +1,44 @@
+<div class="hackathon-post{{ ' expired' if expired }}" {% if not expired %}data-id="{{ hackathon.id }}"{% endif %}>
+    {% if hackathon.image_path %}
+    <div class="hackathon-image">
+        <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
+    </div>
+    {% endif %}
+    <h3>{{ hackathon.title }}</h3>
+    <p class="description">{{ hackathon.description }}</p>
+    <p class="date"><strong>Date:</strong> {{ hackathon.date }}</p>
+    <p class="location"><strong>Location:</strong> {{ hackathon.location }}</p>
+    <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
+
+    {% if expired %}
+        <p class="expired-note">
+            <i class="fas fa-history"></i>
+            Ended {% if hackathon.days_expired == 1 %}1 day ago{% else %}{{ hackathon.days_expired }} days ago{% endif %}
+        </p>
+    {% elif hackathon.joined %}
+        <div class="team-matching-section">
+            <button class="team-match-btn" onclick="viewTeamMatches('{{ hackathon.id }}')">
+                <i class="fas fa-users"></i> View Team Matches
+            </button>
+        </div>
+    {% endif %}
+
+    <div class="button-group">
+        {% if not expired %}
+            {% if hackathon.joined == 1 %}
+                <button class="leave-btn" onclick="leaveHackathon('{{ hackathon.id }}')">
+                    <i class="fas fa-sign-out-alt"></i> Leave Hackathon
+                </button>
+            {% else %}
+                <button class="join-btn" onclick="joinHackathon('{{ hackathon.id }}')">
+                    <i class="fas fa-sign-in-alt"></i> Join Hackathon
+                </button>
+            {% endif %}
+        {% endif %}
+        {% if session.get('username') == hackathon.created_by %}
+            <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+        {% endif %}
+    </div>
+</div>

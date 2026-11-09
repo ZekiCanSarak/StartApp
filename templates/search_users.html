@@ -1,136 +1,87 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Users - StartApp</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="fas fa-search"></i> Find Users</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
+{% set active_page = 'search' %}
 
-    <div class="container">
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users" class="active"><i class="fas fa-search"></i> Find Users</a></li>
-                <li>
-                    <a href="/connections">
-                        <i class="fas fa-users"></i> Connections
-                        <span class="sidebar-notification" id="total-messages-count"></span>
-                    </a>
-                </li>
-                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
+{% block title %}Find People{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">{% endblock %}
 
-        <main class="main-content">
-            <h2>Find Users</h2>
-            
-            <div class="search-container">
-                <form action="{{ url_for('search_users') }}" method="GET" class="search-form" autocomplete="off">
-                    <div class="input-group">
-                        <input type="text" name="q" placeholder=" " value="{{ search_query }}" autocomplete="off">
-                        <label for="q">Search users...</label>
-                    </div>
-                    <button type="submit" class="search-submit-btn">
-                        <i class="fas fa-search"></i> Search Users
-                    </button>
-                </form>
-            </div>
-
-            {% if users %}
-                <div class="user-grid">
-                    {% for user in users %}
-                        <div class="user-card">
-                            <div class="user-info">
-                                <h3><i class="fas fa-user"></i> {{ user.username }}</h3>
-                                <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
-                                <button class="connect-btn" data-username="{{ user.username }}">
-                                    <i class="fas fa-user-plus"></i> Connect
-                                </button>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% elif search_query %}
-                <p class="no-results">No users found matching your search.</p>
-            {% endif %}
-        </main>
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Network</span>
+        <h1 class="page-title">Find people</h1>
+        <p class="page-subtitle">Search the community by username or email and send a connection request to start collaborating.</p>
     </div>
+</div>
 
-    <script>
-    async function updateTotalUnreadCount() {
+<form action="{{ url_for('search_users') }}" method="GET" class="search-bar card" autocomplete="off">
+    <div class="input-icon">
+        <i class="fas fa-search"></i>
+        <input type="text" id="q" name="q" class="input" placeholder="Search by username or email…" value="{{ search_query }}" autocomplete="off" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary search-submit-btn">Search</button>
+</form>
+
+{% if users %}
+    <p class="results-summary">{{ users|length }} result{{ 's' if users|length != 1 }}{% if search_query %} for <strong>“{{ search_query }}”</strong>{% endif %}</p>
+    <div class="card-grid user-grid">
+        {% for user in users %}
+            <div class="person-card user-card hover-lift">
+                <div class="person-header">
+                    <div class="avatar">{{ user.username[:2] }}</div>
+                    <div class="person-meta">
+                        <h3>{{ user.username }}</h3>
+                        <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
+                    </div>
+                </div>
+                <div class="person-actions">
+                    <a href="{{ url_for('profile', username=user.username) }}" class="btn btn-secondary btn-sm">View profile</a>
+                    <button class="btn btn-primary btn-sm connect-btn" data-username="{{ user.username }}">
+                        <i class="fas fa-user-plus"></i> Connect
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% elif search_query %}
+    <div class="empty-state no-results">
+        <div class="empty-state-icon"><i class="fas fa-user-slash"></i></div>
+        <h4>No matches for “{{ search_query }}”</h4>
+        <p>Try a different spelling, or search by email address instead.</p>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon"><i class="fas fa-users"></i></div>
+        <h4>Start typing to discover people</h4>
+        <p>Find teammates for your next hackathon or contributors for your project.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.connect-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const username = btn.dataset.username;
         try {
-            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const response = await fetch('{{ url_for("connect") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `username=${encodeURIComponent(username)}`
+            });
+
             const data = await response.json();
-            
             if (response.ok) {
-                const badge = document.getElementById('total-messages-count');
-                const count = data.count;
-                
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.add('active');
-                } else {
-                    badge.textContent = '';
-                    badge.classList.remove('active');
-                }
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-check"></i> Request sent';
+                btn.classList.add('sent');
+            } else {
+                alert(data.error || 'Failed to send connection request');
             }
         } catch (error) {
-            console.error('Error updating total unread count:', error);
+            alert('An error occurred while sending the connection request');
         }
-    }
-
-    // Update total unread count every 10 seconds
-    updateTotalUnreadCount();
-    setInterval(updateTotalUnreadCount, 10000);
-
-    document.querySelectorAll('.connect-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const username = e.target.dataset.username;
-            try {
-                const response = await fetch('{{ url_for("connect") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `username=${encodeURIComponent(username)}`
-                });
-                
-                const data = await response.json();
-                if (response.ok) {
-                    alert('Connection request sent!');
-                    e.target.disabled = true;
-                    e.target.innerHTML = '<i class="fas fa-check"></i> Request Sent';
-                    e.target.classList.add('sent');
-                } else {
-                    alert(data.error || 'Failed to send connection request');
-                }
-            } catch (error) {
-                alert('An error occurred while sending the connection request');
-            }
-        });
     });
-    </script>
-
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-</body>
-</html> 
+});
+</script>
+{% endblock %}

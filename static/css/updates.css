@@ -1,170 +1,110 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Hackathon live updates */
+
+.event-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    padding: 36px 40px 34px;
+    margin-bottom: 28px;
+    color: var(--ink-text);
+    background:
+        radial-gradient(70% 120% at 100% 0%, rgba(226, 182, 92, 0.20), transparent 60%),
+        radial-gradient(60% 120% at 0% 100%, rgba(95, 195, 168, 0.22), transparent 60%),
+        var(--ink);
+    box-shadow: var(--shadow-md);
 }
 
-body {
-    font-family: "Montserrat", sans-serif;
-    font-weight: 500;
-    background-color: #f4f4f4;
-    color: #333;
+.back-button { margin-bottom: 28px; }
+.event-hero .eyebrow { display: flex; }
+
+.live-dot { font-size: 0.45rem; color: #ff7a6b; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.3; } }
+
+.event-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.9rem, 3.4vw, 2.8rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 12px;
 }
 
-header {
-    text-align: center;
-    padding: 20px;
-    background-color: #0073b1;
-    color: white;
-    border-bottom: 4px solid #005f8a;
-}
+.event-description { max-width: 720px; color: var(--ink-muted); line-height: 1.7; }
 
-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-}
-
-header p {
-    font-size: 1.2rem;
-    margin: 5px 0;
-}
-
-
-section {
-    margin: 20px auto;
-    width: 90%;
-    max-width: 800px;
-    background-color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-section h2 {
-    text-align: center;
-    color: #0073b1;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    font-weight: bold;
-}
-
-
-#updates-container {
-    margin-bottom: 20px;
-}
-
-#updates-list {
-    list-style: none;
-    padding: 0;
-}
-
-#updates-list li {
-    margin-bottom: 15px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-#updates-list li:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-#updates-list li strong {
-    color: #0073b1;
-    display: block;
-    margin-bottom: 5px;
-}
-
-form#add-update-form {
-    margin-top: 30px;
-    padding: 20px;
-    border: 2px solid #0073b1;
-    border-radius: 12px;
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-form#add-update-form textarea {
-    width: 100%;
-    height: 120px;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    font-size: 1rem;
-    margin-bottom: 20px;
-    resize: none;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-form#add-update-form textarea:focus {
-    border-color: #0073b1;
-    box-shadow: 0 0 4px rgba(0, 115, 177, 0.5);
-    outline: none;
-}
-
-form#add-update-form button {
-    padding: 12px 20px;
-    background-color: #0073b1;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%;
-}
-
-form#add-update-form button:hover {
-    background-color: #005f8a;
-    transform: translateY(-2px);
-}
-
-form#add-update-form button:active {
-    background-color: #004a71;
-    transform: translateY(0);
-}
-
-#updates-container.loading {
-    background-color: #f9f9f9;
-    padding: 20px;
-    text-align: center;
-    font-style: italic;
-    color: #666;
-}
-
-.back-button {
-    background-color: grey;
-    color: white;
-    border: none;
-    padding: 12px 18px;
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 8px;
+.event-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.event-meta span {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    margin: 15px 0;
+    gap: 8px;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    color: var(--ink-text);
+}
+.event-meta i { color: var(--accent-bright); font-size: 0.8rem; }
+
+.updates-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.updates-layout > .card:only-child { grid-column: 1 / -1; }
+
+/* Timeline */
+#updates-list { position: relative; padding-left: 26px; }
+#updates-list::before {
+    content: "";
     position: absolute;
-    top: 100px;
-    left: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    font-family: "Montserrat", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 500;
-    font-style: normal;
+    left: 6px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--border);
+    border-radius: 2px;
+}
+#updates-list:empty { display: none; }
+#updates-list:not(:empty) + .updates-empty { display: none; }
+
+#updates-list li {
+    position: relative;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 0.93rem;
+    line-height: 1.6;
+}
+#updates-list li::before {
+    content: "";
+    position: absolute;
+    left: -26px;
+    top: 19px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 3px solid var(--primary);
+}
+#updates-list li:first-child::before { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+
+#updates-list li strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-3);
 }
 
-.back-button i {
-    font-size: 1.2rem;
-}
+#updates-container.loading { opacity: 0.6; }
 
-.back-button:hover {
-    background-color: #005f8a;
-    transform: scale(1.05);
+.composer { position: sticky; top: calc(var(--topbar-h) + 20px); }
+.composer-hint { font-size: 0.85rem; margin: 6px 0 16px; }
+
+@media (max-width: 960px) {
+    .updates-layout { grid-template-columns: 1fr; }
+    .composer { position: static; }
+    .event-hero { padding: 28px 24px; }
 }

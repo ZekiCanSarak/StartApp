@@ -1,80 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - StartApp Resources</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/resource_detail.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="{{ icon }}"></i> {{ title }}</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
+{% extends 'base.html' %}
+{% set active_page = 'resources' %}
+
+{% block title %}{{ title }}{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/resource_detail.css') }}">{% endblock %}
+
+{% block breadcrumbs %}
+<a href="/resources">Resources</a>
+<i class="fas fa-chevron-right sep"></i>
+<span class="current">{{ title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="resource-detail-content">
+    <header class="resource-header">
+        <a href="/resources" class="btn btn-ghost btn-sm back-button"><i class="fas fa-arrow-left"></i> All resources</a>
+        <div class="resource-header-main">
+            <span class="resource-header-icon"><i class="{{ icon }}"></i></span>
+            <div>
+                <span class="eyebrow">Guide</span>
+                <h1 class="page-title">{{ title }}</h1>
+                <p class="page-subtitle resource-description">{{ description }}</p>
+            </div>
         </div>
     </header>
 
-    <div class="container">
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-                <li><a href="/connections"><i class="fas fa-users"></i> Connections</a></li>
-                <li><a href="/resources" class="active"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
-
-        <main class="resource-detail-content">
-            <a href="/resources" class="back-button">
-                <i class="fas fa-arrow-left"></i> Back to Resources
-            </a>
-            
-            <div class="resource-header">
-                <h2>{{ title }}</h2>
-                <p class="resource-description">{{ description }}</p>
-            </div>
-
-            <div class="resource-sections">
+    <div class="resource-layout">
+        <nav class="resource-toc" aria-label="On this page">
+            <span class="toc-label">On this page</span>
+            <ol>
                 {% for section in sections %}
-                <div class="resource-section">
-                    <h3>{{ section.title }}</h3>
-                    <div class="content">
-                        {{ section.content | safe }}
+                <li><a href="#section-{{ loop.index }}">{{ section.title }}</a></li>
+                {% endfor %}
+            </ol>
+        </nav>
+
+        <div class="resource-sections">
+            {% for section in sections %}
+            <article class="resource-section" id="section-{{ loop.index }}">
+                <span class="section-number">{{ '%02d' % loop.index }}</span>
+                <h2>{{ section.title }}</h2>
+                <div class="content">
+                    {{ section.content | safe }}
+                </div>
+                {% if section.code_example %}
+                <div class="code-example">
+                    <div class="code-example-header">
+                        <span class="code-dots"><i></i><i></i><i></i></span>
+                        <span>Example</span>
                     </div>
-                    {% if section.code_example %}
-                    <div class="code-example">
-                        <h4>Example:</h4>
+                    <div class="code-block">
                         <pre><code>{{ section.code_example }}</code></pre>
                     </div>
-                    {% endif %}
-                    {% if section.resources %}
-                    <div class="additional-resources">
-                        <h4>Additional Resources:</h4>
-                        <ul>
-                            {% for resource in section.resources %}
-                            <li><a href="{{ resource.url }}" target="_blank">{{ resource.title }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
                 </div>
-                {% endfor %}
-            </div>
-        </main>
+                {% endif %}
+                {% if section.resources %}
+                <div class="additional-resources">
+                    <h4>Further reading</h4>
+                    <ul>
+                        {% for resource in section.resources %}
+                        <li><a href="{{ resource.url }}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> {{ resource.title }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
     </div>
+</div>
+{% endblock %}
 
-    <script src="{{ url_for('static', filename='js/resource_detail.js') }}"></script>
-</body>
-</html> 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/resource_detail.js') }}"></script>
+{% endblock %}

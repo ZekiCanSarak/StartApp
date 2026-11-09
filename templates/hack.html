@@ -1,265 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="username" content="{{ session.username }}">
-    <title>Hackathons</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/hack.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header> 
-        <div class="navbar">
-            <h1><i class="fas fa-laptop-code"></i> Hackathons</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
+{% set active_page = 'hack' %}
 
-    <aside class="sidebar">
-        <ul id="hackathon-sidebar">
-            <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-            <li><a href="/hack" class="active"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-            <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-            <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-            <li>
-                <a href="/connections">
-                    <i class="fas fa-users"></i> Connections
-                    <span class="sidebar-notification" id="total-messages-count"></span>
-                </a>
-            </li>
-            <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-            <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            {% if active_hackathons %}
-                <li class="sidebar-divider">Active Hackathons</li>
-                {% for hackathon in active_hackathons %}
-                    <li><a href="/hackathon/{{ hackathon.id }}/updates"><i class="fas fa-bell"></i> {{ hackathon.title }}</a></li>
-                {% endfor %}
-            {% endif %}
-        </ul>
-    </aside>
+{% block head %}<meta name="username" content="{{ session.username }}">{% endblock %}
+{% block title %}Hackathons{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/hack.css') }}">{% endblock %}
 
-    <main class="container">
-        <div class="header-actions">
-            {% if session.get('role') == 'organiser' %}
-            <button class="create-post-btn" onclick="showForm()">
-                <i class="fas fa-plus-circle"></i> Post New Hackathons
-            </button>
-            {% endif %}
-        </div>
-        
-        <div id="hackathon-feed">
-            <div class="category-container">
-                <h2>Personalised Hackathons for You:</h2>
-                <div id="personalised-hackathons">
-                    {% if matching_hackathons %}
-                        {% for hackathon in matching_hackathons %}
-                        <div class="hackathon-post" data-id="{{ hackathon.id }}">
-                            {% if hackathon.image_path %}
-                            <div class="hackathon-image">
-                                <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
-                            </div>
-                            {% endif %}
-                            <h3>{{ hackathon.title }}</h3>
-                            <p>{{ hackathon.description }}</p>
-                            <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                            <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                            <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                            
-                            {% if hackathon.joined %}
-                            <div class="team-matching-section">
-                                <button class="team-match-btn" onclick="viewTeamMatches('{{ hackathon.id }}')">
-                                    <i class="fas fa-users"></i> View Team Matches
-                                </button>
-                            </div>
-                            {% endif %}
+{% block sidebar_extra %}
+<div class="nav-label">Your live hackathons</div>
+<ul class="nav-list nav-list--sub" id="hackathon-sidebar">
+    {% for hackathon in active_hackathons %}
+        <li><a href="/hackathon/{{ hackathon.id }}/updates"><i class="fas fa-bell"></i> {{ hackathon.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
 
-                            <div class="button-group">
-                                {% if hackathon.joined == 1 %}
-                                    <button class="leave-btn" onclick="leaveHackathon('{{ hackathon.id }}')">
-                                        <i class="fas fa-sign-out-alt"></i> Leave Hackathon
-                                    </button>
-                                {% else %}
-                                    <button class="join-btn" onclick="joinHackathon('{{ hackathon.id }}')">
-                                        <i class="fas fa-sign-in-alt"></i> Join Hackathon
-                                    </button>
-                                {% endif %}
-                                {% if session.get('username') == hackathon.created_by %}
-                                    <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p id="no-personalised-message">No personalised hackathons available.</p>
-                    {% endif %}
-                </div>
-            </div>
-    
-            <div class="category-container">
-                <h2>Other Upcoming Hackathons:</h2>
-                <div id="other-hackathons">
-                    {% for hackathon in other_hackathons %}
-                    <div class="hackathon-post" data-id="{{ hackathon.id }}">
-                        {% if hackathon.image_path %}
-                        <div class="hackathon-image">
-                            <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
-                        </div>
-                        {% endif %}
-                        <h3>{{ hackathon.title }}</h3>
-                        <p>{{ hackathon.description }}</p>
-                        <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                        <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                        <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                        
-                        {% if hackathon.joined %}
-                        <div class="team-matching-section">
-                            <button class="team-match-btn" onclick="viewTeamMatches('{{ hackathon.id }}')">
-                                <i class="fas fa-users"></i> View Team Matches
-                            </button>
-                        </div>
-                        {% endif %}
-
-                        <div class="button-group">
-                            {% if hackathon.joined == 1 %}
-                                <button class="leave-btn" onclick="leaveHackathon('{{ hackathon.id }}')">
-                                    <i class="fas fa-sign-out-alt"></i> Leave Hackathon
-                                </button>
-                            {% else %}
-                                <button class="join-btn" onclick="joinHackathon('{{ hackathon.id }}')">
-                                    <i class="fas fa-sign-in-alt"></i> Join Hackathon
-                                </button>
-                            {% endif %}
-                            {% if session.get('username') == hackathon.created_by %}
-                                <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-    
-            <div class="category-container">
-                <h2>Expired Hackathons:</h2>
-                <div id="expired-hackathons">
-                    {% for hackathon in expired_hackathons %}
-                    <div class="hackathon-post expired">
-                        {% if hackathon.image_path %}
-                        <div class="hackathon-image">
-                            <img src="{{ url_for('static', filename=hackathon.image_path) }}" alt="{{ hackathon.title }}">
-                        </div>
-                        {% endif %}
-                        <h3>{{ hackathon.title }}</h3>
-                        <p>{{ hackathon.description }}</p>
-                        <p><strong>Date:</strong> {{ hackathon.date }}</p>
-                        <p><strong>Location:</strong> {{ hackathon.location }}</p>
-                        <p class="participants-info"><strong>Participants:</strong> {{ hackathon.current_participants }} / {{ hackathon.max_participants }}</p>
-                        <p class="expired-note">
-                            <i class="fas fa-exclamation-circle"></i> 
-                            This hackathon has expired
-                            {% if hackathon.days_expired == 1 %}
-                                (1 day ago)
-                            {% else %}
-                                ({{ hackathon.days_expired }} days ago)
-                            {% endif %}
-                        </p>
-                        <div class="button-group">
-                            {% if session.get('username') == hackathon.created_by %}
-                                <button class="edit-hackathon-btn" onclick="editHackathon('{{ hackathon.id }}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            
-        </div>
-    </main>
-
-    <div id="hackathon-form-popup" class="form-popup">
-        <h2>Create/Edit Hackathon</h2>
-        <form id="hackathon-form" action="/post_hackathon" method="POST" enctype="multipart/form-data" autocomplete="off">
-            <input type="hidden" name="hackathon_id" id="hackathon_id" autocomplete="off">
-            <input type="hidden" name="current_image_path" id="current_image_path" autocomplete="off">
-    
-            <div class="input-group">
-                <input type="text" id="title" name="title" placeholder=" " required autocomplete="off">
-                <label for="title">Title</label>
-            </div>
-    
-            <div class="input-group">
-                <textarea id="description" name="description" placeholder=" " rows="4" required autocomplete="off"></textarea>
-                <label for="description">Description</label>
-            </div>
-    
-            <div class="input-group">
-                <input type="date" id="date" name="date" placeholder=" " required autocomplete="off">
-                <label for="date">Date</label>
-            </div>
-    
-            <div class="input-group">
-                <input type="text" id="location" name="location" placeholder=" " required autocomplete="off">
-                <label for="location">Location</label>
-            </div>
-    
-            <div class="input-group">
-                <input type="number" id="max_participants" name="max_participants" placeholder=" " min="1" required autocomplete="off">
-                <label for="max_participants">Max Participants</label>
-            </div>
-
-            <div class="input-group">
-                <input type="file" id="image" name="image" accept="image/*" autocomplete="off">
-                <label for="image">Hackathon Image (Optional)</label>
-                <div id="current-image-preview"></div>
-            </div>
-    
-            <button type="submit" id="post-button">Post</button>
-            <button type="submit" id="save-button" style="display: none;">Save Changes</button>
-            <button type="button" class="cancel-btn" onclick="closeForm()">Cancel</button>
-        </form>
+{% block content %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Compete &amp; collaborate</span>
+        <h1 class="page-title">Hackathons</h1>
+        <p class="page-subtitle">Join events that fit your skills, find teammates with complementary strengths, and follow live updates from organisers.</p>
     </div>
-    <script src="{{ url_for('static', filename='js/hack.js') }}"></script>
-    <script>
-    async function updateTotalUnreadCount() {
-        try {
-            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
-            const data = await response.json();
-            
-            if (response.ok) {
-                const badge = document.getElementById('total-messages-count');
-                const count = data.count;
-                
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.add('active');
-                } else {
-                    badge.textContent = '';
-                    badge.classList.remove('active');
-                }
-            }
-        } catch (error) {
-            console.error('Error updating total unread count:', error);
-        }
-    }
+    <div class="page-header-actions header-actions">
+        {% if session.get('role') == 'organiser' %}
+        <button class="btn btn-primary create-post-btn" onclick="showForm()">
+            <i class="fas fa-plus"></i> Post a hackathon
+        </button>
+        {% endif %}
+    </div>
+</div>
 
-    // Update total unread count every 10 seconds
-    updateTotalUnreadCount();
-    setInterval(updateTotalUnreadCount, 10000);
-    </script>
+<div id="hackathon-feed">
+    <section class="section category-container">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-star"></i> Picked for you <span class="count-pill">{{ matching_hackathons|length }}</span></h2>
+        </div>
+        <div id="personalised-hackathons" class="hackathon-grid">
+            {% for hackathon in matching_hackathons %}
+                {% set expired = false %}
+                {% include '_hackathon_card.html' %}
+            {% else %}
+                <div class="empty-state" id="no-personalised-message">
+                    <div class="empty-state-icon"><i class="fas fa-star"></i></div>
+                    <h4>No personalised picks yet</h4>
+                    <p>Add skills and hackathon interests to your profile to get tailored recommendations.</p>
+                    <a href="/profile" class="btn btn-secondary btn-sm">Update profile</a>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
 
-</body>
-</html>
+    <section class="section category-container">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-calendar-alt"></i> Upcoming <span class="count-pill">{{ other_hackathons|length }}</span></h2>
+        </div>
+        <div id="other-hackathons" class="hackathon-grid">
+            {% for hackathon in other_hackathons %}
+                {% set expired = false %}
+                {% include '_hackathon_card.html' %}
+            {% endfor %}
+        </div>
+        {% if not other_hackathons %}
+        <div class="empty-state">
+            <div class="empty-state-icon"><i class="fas fa-calendar-alt"></i></div>
+            <h4>Nothing else scheduled</h4>
+            <p>New hackathons will appear here as organisers post them.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="section category-container">
+        <div class="section-header">
+            <h2 class="section-title"><i class="fas fa-history"></i> Past events <span class="count-pill">{{ expired_hackathons|length }}</span></h2>
+        </div>
+        <div id="expired-hackathons" class="hackathon-grid">
+            {% for hackathon in expired_hackathons %}
+                {% set expired = true %}
+                {% include '_hackathon_card.html' %}
+            {% endfor %}
+        </div>
+        {% if not expired_hackathons %}
+        <p class="muted">No past events yet.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block modals %}
+<div id="hackathon-form-popup" class="form-popup">
+    <h2>Hackathon details</h2>
+    <p class="popup-subtitle">Create a new event or update an existing one.</p>
+    <form id="hackathon-form" action="/post_hackathon" method="POST" enctype="multipart/form-data" autocomplete="off">
+        <input type="hidden" name="hackathon_id" id="hackathon_id" autocomplete="off">
+        <input type="hidden" name="current_image_path" id="current_image_path" autocomplete="off">
+
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="e.g. Spring Build Weekend" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4" required placeholder="Theme, prizes, who it's for…" autocomplete="off"></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="max_participants">Max participants</label>
+                <input type="number" id="max_participants" name="max_participants" min="1" required placeholder="100" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location" required placeholder="City, venue or Online" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label for="image">Cover image <span class="muted">(optional)</span></label>
+            <input type="file" id="image" name="image" accept="image/*" autocomplete="off">
+            <div id="current-image-preview"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-ghost cancel-btn" onclick="closeForm()">Cancel</button>
+            <button type="submit" id="post-button" class="btn btn-primary btn-lg">Publish hackathon</button>
+            <button type="submit" id="save-button" class="btn btn-primary btn-lg" style="display: none;">Save changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/hack.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,8 @@
+{%- if role == 'admin' -%}Admin
+{%- elif role == 'frontend' -%}Frontend Dev
+{%- elif role == 'backend' -%}Backend Dev
+{%- elif role == 'fullstack' -%}Full Stack
+{%- elif role == 'ui-ux' -%}UI/UX Designer
+{%- elif role == 'pm' -%}Project Manager
+{%- else -%}{{ role | title }}
+{%- endif -%}

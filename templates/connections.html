@@ -1,181 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connections - StartApp</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-    <script src="https://kit.fontawesome.com/9a4f3e2efd.js" crossorigin="anonymous"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-</head>
-<body>
-    <header>
-        <div class="navbar">
-            <h1><i class="fas fa-users"></i> Connections</h1>
-            <nav>
-                <ul>
-                    <li><a href="/logout">Logout</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% extends 'base.html' %}
+{% set active_page = 'connections' %}
 
-    <div class="container">
-        <aside class="sidebar">
-            <ul>
-                <li><a href="/"><i class="fas fa-rocket"></i> StartApp</a></li>
-                <li><a href="/hack"><i class="fas fa-laptop-code"></i> Hackathons</a></li>
-                <li><a href="/profile"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/search_users"><i class="fas fa-search"></i> Find Users</a></li>
-                <li>
-                    <a href="/connections" class="active">
-                        <i class="fas fa-users"></i> Connections
-                        <span class="sidebar-notification" id="total-messages-count"></span>
-                    </a>
-                </li>
-                <li><a href="/resources"><i class="fas fa-book"></i> Resources</a></li>
-                <li><a href="/projects"><i class="fas fa-project-diagram"></i> Projects</a></li>
-            </ul>
-        </aside>
+{% block title %}Connections{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/network.css') }}">{% endblock %}
 
-        <main class="main-content">
-            <h2>Your Connections</h2>
-            
-            {% if connections %}
-                <div class="connections-grid">
-                    {% for connection in connections %}
-                        <div class="connection-card">
-                            <div class="connection-info">
-                                <h3><i class="fas fa-user"></i> {{ connection.username }}</h3>
-                                <p><i class="fas fa-envelope"></i> {{ connection.email }}</p>
-                                <p class="status">
-                                    Status: 
-                                    <span class="badge {% if connection.status == 'accepted' %}accepted{% else %}pending{% endif %}">
-                                        {{ connection.status }}
-                                    </span>
-                                </p>
-                                <p class="connection-date">
-                                    <i class="fas fa-calendar"></i> Connected since: {{ connection.created_at }}
-                                </p>
-                                
-                                {% if connection.status == 'accepted' %}
-                                    <a href="{{ url_for('messages', username=connection.username) }}" class="message-btn">
-                                        <i class="fas fa-comment"></i> Message
-                                        <span class="message-notification" data-username="{{ connection.username }}"></span>
-                                    </a>
-                                {% elif connection.request_type == 'received' and connection.status == 'pending' %}
-                                    <div class="action-buttons">
-                                        <button class="accept-btn" data-username="{{ connection.username }}">
-                                            <i class="fas fa-check"></i> Accept
-                                        </button>
-                                        <button class="reject-btn" data-username="{{ connection.username }}">
-                                            <i class="fas fa-times"></i> Reject
-                                        </button>
-                                    </div>
-                                {% elif connection.request_type == 'sent' and connection.status == 'pending' %}
-                                    <p class="pending-status">Request Sent - Pending Response</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="no-connections">
-                    <p>You don't have any connections yet.</p>
-                    <a href="{{ url_for('search_users') }}" class="search-users-btn">
-                        <i class="fas fa-search"></i> Search for users
-                    </a>
-                </div>
-            {% endif %}
-        </main>
+{% block content %}
+{% set received = connections|selectattr('request_type', 'equalto', 'received')|selectattr('status', 'equalto', 'pending')|list if connections else [] %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Network</span>
+        <h1 class="page-title">Your connections</h1>
+        <p class="page-subtitle">Manage requests and jump into conversations with the people you build with.</p>
     </div>
+    <div class="page-header-actions">
+        <a href="{{ url_for('search_users') }}" class="btn btn-primary"><i class="fas fa-user-plus"></i> Find people</a>
+    </div>
+</div>
 
-    <script>
-    async function updateTotalUnreadCount() {
+{% if connections %}
+    {% if received %}
+    <div class="notice">
+        <i class="fas fa-inbox"></i>
+        <span>You have <strong>{{ received|length }}</strong> pending request{{ 's' if received|length != 1 }} waiting for a response.</span>
+    </div>
+    {% endif %}
+
+    <div class="card-grid connections-grid">
+        {% for connection in connections %}
+            <div class="person-card connection-card hover-lift">
+                <div class="person-header">
+                    <div class="avatar">{{ connection.username[:2] }}</div>
+                    <div class="person-meta connection-info">
+                        <h3>{{ connection.username }}</h3>
+                        <p><i class="fas fa-envelope"></i> {{ connection.email }}</p>
+                    </div>
+                    <span class="badge {% if connection.status == 'accepted' %}accepted{% else %}pending{% endif %}">
+                        {{ 'Connected' if connection.status == 'accepted' else ('Incoming' if connection.request_type == 'received' else 'Pending') }}
+                    </span>
+                </div>
+
+                <p class="connection-date"><i class="fas fa-calendar"></i> Since {{ connection.created_at }}</p>
+
+                <div class="person-actions">
+                    {% if connection.status == 'accepted' %}
+                        <a href="{{ url_for('profile', username=connection.username) }}" class="btn btn-secondary btn-sm">Profile</a>
+                        <a href="{{ url_for('messages', username=connection.username) }}" class="btn btn-primary btn-sm message-btn">
+                            <i class="fas fa-comment"></i> Message
+                            <span class="message-notification" data-username="{{ connection.username }}"></span>
+                        </a>
+                    {% elif connection.request_type == 'received' and connection.status == 'pending' %}
+                        <div class="action-buttons">
+                            <button class="btn btn-ghost btn-sm reject-btn" data-username="{{ connection.username }}">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                            <button class="btn btn-primary btn-sm accept-btn" data-username="{{ connection.username }}">
+                                <i class="fas fa-check"></i> Accept
+                            </button>
+                        </div>
+                    {% elif connection.request_type == 'sent' and connection.status == 'pending' %}
+                        <p class="pending-status"><i class="fas fa-hourglass-half"></i> Awaiting their response</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state no-connections">
+        <div class="empty-state-icon"><i class="fas fa-user-friends"></i></div>
+        <h4>No connections yet</h4>
+        <p>Search for people to connect with and they'll appear here once they accept.</p>
+        <a href="{{ url_for('search_users') }}" class="btn btn-primary search-users-btn"><i class="fas fa-search"></i> Find people</a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateMessageNotifications() {
+    try {
+        const response = await fetch('{{ url_for("get_unread_counts") }}');
+        const data = await response.json();
+
+        if (response.ok) {
+            const counts = data.counts;
+            document.querySelectorAll('.message-notification').forEach(badge => {
+                const count = counts[badge.dataset.username] || 0;
+                badge.textContent = count > 0 ? count : '';
+                badge.classList.toggle('active', count > 0);
+            });
+        }
+    } catch (error) {
+        console.error('Error updating message notifications:', error);
+    }
+}
+
+updateMessageNotifications();
+setInterval(updateMessageNotifications, 10000);
+
+document.querySelectorAll('.accept-btn, .reject-btn').forEach(button => {
+    button.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const username = btn.dataset.username;
+        const action = btn.classList.contains('accept-btn') ? 'accept' : 'reject';
+
         try {
-            const response = await fetch('{{ url_for("get_unread_count", username=session.username) }}');
+            const response = await fetch('{{ url_for("update_connection_status") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `username=${encodeURIComponent(username)}&action=${action}`
+            });
+
             const data = await response.json();
-            
             if (response.ok) {
-                const badge = document.getElementById('total-messages-count');
-                const count = data.count;
-                
-                if (count > 0) {
-                    badge.textContent = count;
-                    badge.classList.add('active');
-                } else {
-                    badge.textContent = '';
-                    badge.classList.remove('active');
-                }
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to update connection status');
             }
         } catch (error) {
-            console.error('Error updating total unread count:', error);
+            alert('An error occurred while updating the connection');
         }
-    }
-
-    // Update total unread count every 10 seconds
-    updateTotalUnreadCount();
-    setInterval(updateTotalUnreadCount, 10000);
-
-    async function updateMessageNotifications() {
-        try {
-            const response = await fetch('{{ url_for("get_unread_counts") }}');
-            const data = await response.json();
-            
-            if (response.ok) {
-                const counts = data.counts;
-                document.querySelectorAll('.message-notification').forEach(badge => {
-                    const username = badge.dataset.username;
-                    const count = counts[username] || 0;
-                    
-                    if (count > 0) {
-                        badge.textContent = count;
-                        badge.classList.add('active');
-                    } else {
-                        badge.textContent = '';
-                        badge.classList.remove('active');
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error updating message notifications:', error);
-        }
-    }
-
-    updateMessageNotifications();
-    setInterval(updateMessageNotifications, 10000);
-
-    document.querySelectorAll('.accept-btn, .reject-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const username = e.target.dataset.username;
-            const action = e.target.classList.contains('accept-btn') ? 'accept' : 'reject';
-            
-            try {
-                const response = await fetch('{{ url_for("update_connection_status") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `username=${encodeURIComponent(username)}&action=${action}`
-                });
-                
-                const data = await response.json();
-                if (response.ok) {
-                    // Reload the page to show updated status
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Failed to update connection status');
-                }
-            } catch (error) {
-                alert('An error occurred while updating the connection');
-            }
-        });
     });
-    </script>
-
-    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
-</body>
-</html> 
+});
+</script>
+{% endblock %}

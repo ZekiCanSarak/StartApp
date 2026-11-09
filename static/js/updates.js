@@ -8,7 +8,7 @@ function loadUpdates(hackathonId) {
             updatesList.innerHTML = ''; 
             updates.forEach(update => {
                 const updateItem = document.createElement('li');
-                updateItem.innerHTML = `<strong>${new Date(update.created_at).toLocaleString()}</strong>: ${update.content}`;
+                updateItem.innerHTML = `<strong>${new Date(update.created_at).toLocaleString()}</strong> ${update.content}`;
                 updatesList.appendChild(updateItem);
             });
         })
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (data.success) {
                         const updatesList = document.getElementById('updates-list');
                         const updateItem = document.createElement('li');
-                        updateItem.innerHTML = `<strong>${new Date(data.update.created_at).toLocaleString()}</strong>: ${data.update.content}`;
+                        updateItem.innerHTML = `<strong>${new Date(data.update.created_at).toLocaleString()}</strong> ${data.update.content}`;
                         updatesList.prepend(updateItem);
                         document.getElementById('update-content').value = '';
                     } else {
@@ -64,7 +64,7 @@ function fetchUpdates(hackathonId) {
             updatesList.innerHTML = ''; 
             data.forEach(update => {
                 const updateElement = document.createElement('li');
-                updateElement.innerHTML = `<strong>${update.created_at}</strong>: ${update.content}`;
+                updateElement.innerHTML = `<strong>${update.created_at}</strong> ${update.content}`;
                 updatesList.appendChild(updateElement);
             });
         })

@@ -8,9 +8,13 @@ from werkzeug.utils import secure_filename
 import hashlib
 import json
 
+# Override with the DATABASE_PATH env var (e.g. for local development).
+DB_PATH = os.environ.get('DATABASE_PATH', '/home/root/app_data/database.sqlite')
+os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
+
 def init_db():
     """Initialize the database."""
-    db = sqlite3.connect('/home/root/app_data/database.sqlite')
+    db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
     
     # Create users table if it doesn't exist
@@ -137,7 +141,7 @@ def init_db():
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(
-            '/home/root/app_data/database.sqlite',
+            DB_PATH,
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.row_factory = sqlite3.Row
@@ -145,7 +149,7 @@ def get_db():
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a secure secret key
-app.config['DATABASE'] = '/home/root/app_data/database.sqlite'
+app.config['DATABASE'] = DB_PATH
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 

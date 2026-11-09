@@ -128,7 +128,9 @@
 #hackathon-form-popup { max-width: 560px; }
 
 #current-image-preview { margin-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
-#current-image-preview img { max-width: 220px; border-radius: 10px; border: 1px solid var(--border); }
+#current-image-preview:empty { display: none; }
+#current-image-preview img { width: 240px; max-width: 100%; height: 140px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+.image-preview-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 
 .remove-image-btn {
     display: inline-flex;

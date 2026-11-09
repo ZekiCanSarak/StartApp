@@ -1,20 +1,52 @@
 // Get current user from the session
 const currentUser = document.querySelector('meta[name="username"]').content;
 
-// Add image preview functionality
-document.getElementById('image').addEventListener('change', function(e) {
+// Image field helpers
+function resetImageField() {
+    document.getElementById('current-image-preview').innerHTML = '';
+    document.getElementById('image').value = '';
+    document.getElementById('remove_image').value = '';
+    document.getElementById('image-hint').style.display = 'none';
+}
+
+function showImagePreview(src, caption, withRemoveButton) {
     const preview = document.getElementById('current-image-preview');
     preview.innerHTML = '';
-    
+
+    const label = document.createElement('span');
+    label.className = 'image-preview-label';
+    label.textContent = caption;
+    preview.appendChild(label);
+
+    const img = document.createElement('img');
+    img.src = src;
+    preview.appendChild(img);
+
+    if (withRemoveButton) {
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'remove-image-btn';
+        removeButton.innerHTML = '<i class="fas fa-trash"></i> Remove image';
+        removeButton.onclick = function() {
+            preview.innerHTML = '<span class="image-preview-label">Image will be removed when you save</span>';
+            document.getElementById('image').value = '';
+            document.getElementById('remove_image').value = '1';
+            document.getElementById('image-hint').style.display = 'none';
+        };
+        preview.appendChild(removeButton);
+    }
+}
+
+// Preview a newly chosen image
+document.getElementById('image').addEventListener('change', function() {
+    const preview = document.getElementById('current-image-preview');
+    preview.innerHTML = '';
+    document.getElementById('remove_image').value = '';
+
     if (this.files && this.files[0]) {
+        document.getElementById('image-hint').style.display = 'none';
         const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            preview.appendChild(img);
-        }
-        
+        reader.onload = (e) => showImagePreview(e.target.result, 'New image', false);
         reader.readAsDataURL(this.files[0]);
     }
 });
@@ -23,19 +55,11 @@ function showForm(isEdit = false) {
     const formPopup = document.getElementById('hackathon-form-popup');
     const postButton = document.querySelector('button[type="submit"]:not(#save-button)');
     const saveButton = document.getElementById('save-button');
-    const imagePreview = document.getElementById('current-image-preview');
-    const imageInput = document.getElementById('image');
-
     // Only clear the form if it's not an edit
     if (!isEdit) {
         document.getElementById('hackathon-form').reset();
-        imagePreview.innerHTML = '';
-        imageInput.value = '';
-        // Remove any existing current_image_path input
-        const currentImageInput = document.getElementById('current_image_path');
-        if (currentImageInput) {
-            currentImageInput.remove();
-        }
+        document.getElementById('hackathon_id').value = '';
+        resetImageField();
     }
 
     formPopup.style.display = 'block';
@@ -47,13 +71,7 @@ function closeForm() {
     document.getElementById('hackathon-form-popup').style.display = 'none';
     document.getElementById('hackathon-form').reset();
     document.getElementById('hackathon_id').value = '';
-    document.getElementById('current-image-preview').innerHTML = '';
-    
-    // Remove the current_image_path input if it exists
-    const currentImageInput = document.getElementById('current_image_path');
-    if (currentImageInput) {
-        currentImageInput.remove();
-    }
+    resetImageField();
 }
 
 document.getElementById("hackathon-form").addEventListener("submit", function (e) {
@@ -61,16 +79,9 @@ document.getElementById("hackathon-form").addEventListener("submit", function (e
 
     const formData = new FormData(this);
     const hackathonId = document.getElementById('hackathon_id').value;
-    const currentImagePath = document.getElementById('current_image_path');
-    const newImage = document.getElementById('image').files[0];
 
     if (hackathonId) {
-        formData.append('hackathon_id', hackathonId);
-    }
-
-    // If we have a current image path and no new image is selected, keep the current image
-    if (currentImagePath && currentImagePath.value && !newImage) {
-        formData.set('current_image_path', currentImagePath.value);
+        formData.set('hackathon_id', hackathonId);
     }
 
     fetch("/post_hackathon", {
@@ -289,38 +300,11 @@ function editHackathon(hackathonId) {
                 document.getElementById('max_participants').value = response.hackathon.max_participants || '';
                 document.getElementById('hackathon_id').value = hackathonId;
 
-                // Handle image preview and current image path
-                const preview = document.getElementById('current-image-preview');
-                preview.innerHTML = '';
-                
+                // Show the current image (browsers can't pre-fill a file input, so we preview it instead)
+                resetImageField();
                 if (response.hackathon.image_path) {
-                    // Create and append the image preview
-                    const img = document.createElement('img');
-                    img.src = `/static/${response.hackathon.image_path}`;
-                    preview.appendChild(img);
-
-                    // Add hidden input for current image path
-                    let currentImageInput = document.getElementById('current_image_path');
-                    if (!currentImageInput) {
-                        currentImageInput = document.createElement('input');
-                        currentImageInput.type = 'hidden';
-                        currentImageInput.id = 'current_image_path';
-                        currentImageInput.name = 'current_image_path';
-                        document.getElementById('hackathon-form').appendChild(currentImageInput);
-                    }
-                    currentImageInput.value = response.hackathon.image_path;
-
-                    // Add remove image button
-                    const removeButton = document.createElement('button');
-                    removeButton.type = 'button';
-                    removeButton.className = 'remove-image-btn';
-                    removeButton.innerHTML = '<i class="fas fa-trash"></i> Remove Image';
-                    removeButton.onclick = function() {
-                        preview.innerHTML = '';
-                        document.getElementById('image').value = '';
-                        currentImageInput.value = '';
-                    };
-                    preview.appendChild(removeButton);
+                    showImagePreview(`/static/${response.hackathon.image_path}`, 'Current image', true);
+                    document.getElementById('image-hint').style.display = 'block';
                 }
             } else {
                 alert("Failed to load hackathon details.");

@@ -92,7 +92,7 @@
     <p class="popup-subtitle">Create a new event or update an existing one.</p>
     <form id="hackathon-form" action="/post_hackathon" method="POST" enctype="multipart/form-data" autocomplete="off">
         <input type="hidden" name="hackathon_id" id="hackathon_id" autocomplete="off">
-        <input type="hidden" name="current_image_path" id="current_image_path" autocomplete="off">
+        <input type="hidden" name="remove_image" id="remove_image" value="" autocomplete="off">
 
         <div class="form-group">
             <label for="title">Title</label>
@@ -123,6 +123,7 @@
         <div class="form-group">
             <label for="image">Cover image <span class="muted">(optional)</span></label>
             <input type="file" id="image" name="image" accept="image/*" autocomplete="off">
+            <p class="field-hint" id="image-hint" style="display: none;">Your current image is kept. Choose a file only if you want to replace it.</p>
             <div id="current-image-preview"></div>
         </div>
 

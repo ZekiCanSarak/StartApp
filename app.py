@@ -153,6 +153,20 @@ app.config['DATABASE'] = DB_PATH
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+@app.teardown_appcontext
+def close_db(exception=None):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+@app.before_request
+def load_session_role():
+    """Fill in the role for sessions created before login stored it."""
+    if 'username' in session and 'role' not in session:
+        user = query_db("SELECT role FROM users WHERE username = ?", [session['username']], one=True)
+        if user:
+            session['role'] = user['role']
+
 # Initialize database at startup
 with app.app_context():
     init_db()
@@ -178,7 +192,6 @@ def insert_db(query, args=()):
      db = get_db()
      db.execute(query, args)
      db.commit()
-     db.close()
 
 def cleanup_old_hackathons(days_threshold=30):
     """Delete hackathons that have been expired for more than the specified number of days"""
@@ -242,6 +255,7 @@ def home():
             
             if user and sha256_crypt.verify(password, user['password']):
                 session['username'] = username
+                session['role'] = user['role']
                 session['logged_in'] = True
                 flash("Welcome back!", "success")
                 return redirect(url_for('home'))
@@ -395,10 +409,10 @@ def post_hackathon():
     max_participants = request.form.get('max_participants')
     hackathon_id = request.form.get('hackathon_id')
     image = request.files.get('image')
-    current_image_path = request.form.get('current_image_path')
+    remove_image = request.form.get('remove_image') == '1'
 
-    # Handle image upload
-    image_path = current_image_path
+    # Handle image upload (None means no new image was uploaded)
+    image_path = None
     if image and image.filename:
         if not allowed_file(image.filename):
             return jsonify({'success': False, 'message': 'Invalid file type. Only images are allowed.'}), 400
@@ -408,10 +422,14 @@ def post_hackathon():
         filename = f"{timestamp}_{filename}"
         
         # Save the file
-        image_path = os.path.join('uploads', filename)  # Store relative path without 'static/'
+        # Stored relative to static/ and used in URLs, so always use '/' (os.path.join gives '\' on Windows)
+        image_path = f"uploads/{filename}"
         full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         image.save(full_path)
+
+    if not hackathon_id and session.get('role') != 'organiser':
+        return jsonify({'success': False, 'message': 'Only organisers can post hackathons.'}), 403
 
     try:
         db = get_db()
@@ -425,14 +443,13 @@ def post_hackathon():
             if not hackathon or hackathon['created_by'] != username:
                 return jsonify({'success': False, 'message': 'You do not have permission to edit this hackathon.'})
 
-            # If a new image is uploaded or image is removed, delete the old one if it exists
-            if ((image_path and image_path != hackathon['image_path']) or not image_path) and hackathon['image_path']:
-                old_image_path = os.path.join('static', hackathon['image_path'])
-                if os.path.exists(old_image_path):
-                    os.remove(old_image_path)
-
-            # If no new image is uploaded and no current_image_path is provided, keep the existing image
-            if not image_path and hackathon['image_path']:
+            # Keep the existing image unless a new one was uploaded or the user chose to remove it
+            if image_path or remove_image:
+                if hackathon['image_path']:
+                    old_image_path = os.path.join('static', hackathon['image_path'])
+                    if os.path.exists(old_image_path):
+                        os.remove(old_image_path)
+            else:
                 image_path = hackathon['image_path']
 
             # Editing existing hackathon
@@ -547,7 +564,8 @@ def get_hackathon(hackathon_id):
                 'location': hackathon['location'],
                 'max_participants': hackathon['max_participants'],
                 'current_participants': current_participants,
-                'created_by': hackathon['created_by'], 
+                'created_by': hackathon['created_by'],
+                'image_path': hackathon['image_path'],
                 'joined': session['username'] in [p['username'] for p in query_db("SELECT username FROM participants WHERE hackathon_id = ?", [hackathon_id])]
             }
         })
@@ -888,7 +906,6 @@ def send_message():
         """, [message_id, receiver])
         
         db.commit()
-        db.close()
         
         return jsonify({'message': 'Message sent'})
     except Exception as e:
@@ -1672,8 +1689,6 @@ def create_project():
         db.rollback()
         flash(f"Error creating project: {str(e)}", "error")
         return redirect(url_for('projects'))
-    finally:
-        db.close()
 
 @app.route('/project/<int:project_id>')
 def project_detail(project_id):
@@ -1824,8 +1839,6 @@ def task_board(project_id):
         except Exception as e:
             db.rollback()
             flash(f"Error creating task lists: {str(e)}", "error")
-        finally:
-            db.close()
 
     tasks = query_db("""
         SELECT t.*, u.username as assigned_name
@@ -1915,8 +1928,6 @@ def create_task():
     except Exception as e:
         db.rollback()
         return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
 
 @app.route('/update_task_position', methods=['POST'])
 def update_task_position():
@@ -2002,8 +2013,6 @@ def update_task(task_id):
     except Exception as e:
         db.rollback()
         return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
 
 @app.route('/delete_task/<int:task_id>', methods=['POST'])
 def delete_task(task_id):
@@ -2172,8 +2181,6 @@ def invite_members():
     except Exception as e:
         db.rollback()
         flash(f"Error sending invitations: {str(e)}", "error")
-    finally:
-        db.close()
     
     return redirect(url_for('project_detail', project_id=project_id))
 
